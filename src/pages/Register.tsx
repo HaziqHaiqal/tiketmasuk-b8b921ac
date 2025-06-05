@@ -32,7 +32,12 @@ const Register = () => {
     
     try {
       await register(name, email, password, role);
-      navigate('/');
+      // Redirect based on role
+      if (role === 'vendor') {
+        navigate('/vendor/dashboard');
+      } else {
+        navigate('/customer/dashboard');
+      }
     } catch (error) {
       console.error('Registration failed:', error);
     } finally {

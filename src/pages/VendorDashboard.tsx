@@ -1,202 +1,295 @@
 
-import React from 'react';
-import Header from '@/components/Header';
+import React, { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DollarSign, 
-  Calendar, 
-  Users, 
-  TrendingUp, 
-  Plus,
-  Eye,
-  Edit,
-  MoreHorizontal
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, MapPin, Users, DollarSign, TrendingUp, Plus, Edit, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const VendorDashboard = () => {
-  // Mock data
-  const stats = [
-    {
-      title: 'Total Revenue',
-      value: '$12,450',
-      change: '+12.5%',
-      icon: DollarSign,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Active Events',
-      value: '8',
-      change: '+2',
-      icon: Calendar,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Total Attendees',
-      value: '1,240',
-      change: '+180',
-      icon: Users,
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Conversion Rate',
-      value: '68%',
-      change: '+5.2%',
-      icon: TrendingUp,
-      color: 'text-orange-600'
-    }
-  ];
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const recentEvents = [
+  // Mock data for demonstration
+  const stats = {
+    totalEvents: 5,
+    totalSales: 1250,
+    totalTicketsSold: 156,
+    avgRating: 4.8
+  };
+
+  const events = [
     {
       id: '1',
       title: 'Summer Music Festival',
       date: '2024-07-15',
-      status: 'active',
-      attendees: 450,
-      revenue: '$4,050',
-      tickets: '450/500'
+      location: 'Central Park, NYC',
+      ticketsSold: 45,
+      totalTickets: 100,
+      revenue: 675,
+      status: 'active'
     },
     {
       id: '2',
-      title: 'Tech Workshop Series',
+      title: 'Tech Conference 2024',
       date: '2024-08-20',
-      status: 'draft',
-      attendees: 0,
-      revenue: '$0',
-      tickets: '0/100'
+      location: 'Convention Center',
+      ticketsSold: 89,
+      totalTickets: 150,
+      revenue: 445,
+      status: 'active'
     },
     {
       id: '3',
-      title: 'Food & Wine Tasting',
-      date: '2024-09-10',
-      status: 'active',
-      attendees: 120,
-      revenue: '$2,400',
-      tickets: '120/150'
+      title: 'Jazz Night',
+      date: '2024-06-01',
+      location: 'Blue Note Club',
+      ticketsSold: 22,
+      totalTickets: 25,
+      revenue: 130,
+      status: 'completed'
     }
   ];
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      active: 'bg-green-100 text-green-800',
-      draft: 'bg-gray-100 text-gray-800',
-      ended: 'bg-red-100 text-red-800'
-    };
-    return variants[status as keyof typeof variants] || variants.draft;
-  };
+  const recentOrders = [
+    { id: '1', event: 'Summer Music Festival', customer: 'John Doe', amount: 75, date: '2024-06-03' },
+    { id: '2', event: 'Tech Conference 2024', customer: 'Jane Smith', amount: 50, date: '2024-06-02' },
+    { id: '3', event: 'Jazz Night', customer: 'Mike Johnson', amount: 45, date: '2024-06-01' }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Vendor Dashboard</h1>
-            <p className="text-gray-600 mt-2">Manage your events and track performance</p>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Vendor Dashboard</h1>
+              <p className="text-gray-600">Welcome back, {user?.name}!</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Event
+              </Button>
+              <Button variant="ghost" onClick={logout}>
+                Logout
+              </Button>
+            </div>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Event
-          </Button>
         </div>
+      </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                    <p className={`text-sm mt-1 ${stat.color}`}>{stat.change} from last month</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <Calendar className="w-8 h-8 text-blue-600" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Events</p>
+                      <p className="text-2xl font-bold">{stats.totalEvents}</p>
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-full bg-gray-100`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <DollarSign className="w-8 h-8 text-green-600" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Total Sales</p>
+                      <p className="text-2xl font-bold">${stats.totalSales}</p>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <Users className="w-8 h-8 text-purple-600" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Tickets Sold</p>
+                      <p className="text-2xl font-bold">{stats.totalTicketsSold}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <TrendingUp className="w-8 h-8 text-orange-600" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">Avg Rating</p>
+                      <p className="text-2xl font-bold">{stats.avgRating}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Events</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {events.slice(0, 3).map((event) => (
+                      <div key={event.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{event.title}</p>
+                          <p className="text-sm text-gray-600">{new Date(event.date).toLocaleDateString()}</p>
+                        </div>
+                        <Badge variant={event.status === 'active' ? 'default' : 'secondary'}>
+                          {event.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {recentOrders.map((order) => (
+                      <div key={order.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{order.customer}</p>
+                          <p className="text-sm text-gray-600">{order.event}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${order.amount}</p>
+                          <p className="text-sm text-gray-600">{new Date(order.date).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="events" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Events</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {events.map((event) => (
+                    <div key={event.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-lg">{event.title}</h3>
+                          <div className="flex items-center text-sm text-gray-600 mt-1">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {new Date(event.date).toLocaleDateString()}
+                            <MapPin className="w-4 h-4 ml-4 mr-1" />
+                            {event.location}
+                          </div>
+                        </div>
+                        <Badge variant={event.status === 'active' ? 'default' : 'secondary'}>
+                          {event.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mt-4">
+                        <div>
+                          <p className="text-sm text-gray-600">Tickets Sold</p>
+                          <p className="font-semibold">{event.ticketsSold} / {event.totalTickets}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Revenue</p>
+                          <p className="font-semibold">${event.revenue}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">Completion</p>
+                          <p className="font-semibold">{Math.round((event.ticketsSold / event.totalTickets) * 100)}%</p>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2 mt-4">
+                        <Button size="sm" variant="outline">
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </TabsContent>
 
-        {/* Recent Events */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Recent Events</CardTitle>
-              <Button variant="outline" size="sm">
-                View All
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                      <Badge className={getStatusBadge(event.status)}>
-                        {event.status}
-                      </Badge>
+          <TabsContent value="orders" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-medium">{order.customer}</p>
+                          <p className="text-sm text-gray-600">{order.event}</p>
+                          <p className="text-xs text-gray-500">{new Date(order.date).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-lg">${order.amount}</p>
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            Confirmed
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {new Date(event.date).toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </p>
-                  </div>
-                  
-                  <div className="hidden md:flex items-center space-x-8 text-sm">
-                    <div className="text-center">
-                      <p className="font-medium text-gray-900">{event.attendees}</p>
-                      <p className="text-gray-600">Attendees</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-medium text-gray-900">{event.revenue}</p>
-                      <p className="text-gray-600">Revenue</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-medium text-gray-900">{event.tickets}</p>
-                      <p className="text-gray-600">Tickets</p>
-                    </div>
-                  </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Event
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics & Reports</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Analytics dashboard coming soon</p>
+                  <p className="text-sm text-gray-500 mt-2">Track your performance, customer insights, and revenue trends</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
