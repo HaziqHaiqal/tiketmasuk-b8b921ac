@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Browse from "./pages/Browse";
+import Products from "./pages/Products";
 import EventDetails from "./pages/EventDetails";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/browse" element={<Browse />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/event/:id" element={<EventDetails />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

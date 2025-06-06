@@ -74,11 +74,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <span className="text-lg font-bold text-green-600">
-                ${price}
+                RM {price}
               </span>
               {originalPrice && (
                 <span className="text-sm text-gray-500 line-through">
-                  ${originalPrice}
+                  RM {originalPrice}
                 </span>
               )}
             </div>
@@ -98,7 +98,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <Button 
-          className="w-full bg-green-600 hover:bg-green-700" 
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
           disabled={!inStock}
         >
           <ShoppingCart className="w-4 h-4 mr-2" />

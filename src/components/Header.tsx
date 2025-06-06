@@ -47,6 +47,11 @@ const Header = () => {
               Browse
             </Link>
 
+            {/* Products Link */}
+            <Link to="/products" className="text-gray-700 hover:text-blue-600 font-medium">
+              Products
+            </Link>
+
             {/* Cart */}
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="w-5 h-5" />

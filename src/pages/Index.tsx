@@ -150,7 +150,7 @@ const Index = () => {
                   <p className="text-gray-600 text-sm mb-3">From {product.event}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-blue-600">RM {product.price}</span>
-                    <Button size="sm">Add to Cart</Button>
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Add to Cart</Button>
                   </div>
                 </div>
               </div>
