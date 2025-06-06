@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,10 +69,12 @@ const VendorDashboard = () => {
               <p className="text-gray-600">Welcome back, {user?.name}!</p>
             </div>
             <div className="flex items-center space-x-4">
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Event
-              </Button>
+              <Link to="/vendor/create-event">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Event
+                </Button>
+              </Link>
               <Button variant="ghost" onClick={logout}>
                 Logout
               </Button>
