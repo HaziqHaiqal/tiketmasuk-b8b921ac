@@ -76,7 +76,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      setProfile(data);
+      // Type-safe profile assignment with proper role casting
+      const profileData: Profile = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role as 'customer' | 'vendor' | 'admin'
+      };
+
+      setProfile(profileData);
     } catch (error) {
       console.error('Error in fetchProfile:', error);
     }

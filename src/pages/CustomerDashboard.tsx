@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Calendar, MapPin, Clock, Download, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CustomerDashboard = () => {
-  const { user, logout } = useAuth();
+  const { profile, logout } = useAuth();
 
   // Mock data for demonstration
   const upcomingEvents = [
@@ -61,7 +60,7 @@ const CustomerDashboard = () => {
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Customer Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {user?.name}!</p>
+              <p className="text-gray-600">Welcome back, {profile?.name}!</p>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="outline" asChild>
