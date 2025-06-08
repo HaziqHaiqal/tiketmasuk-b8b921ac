@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,12 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Users, Star, Clock, ArrowLeft } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
+import { useWaitingList } from '@/hooks/useWaitingList';
 
 const EventDetails = () => {
   const { id } = useParams();
-  const [isInQueue, setIsInQueue] = useState(false);
-  const [queuePosition, setQueuePosition] = useState(0);
   const [showTicketSelection, setShowTicketSelection] = useState(false);
+  const { waitingListEntry, joinWaitingList, loading } = useWaitingList(id);
 
   // Mock event data - in real app, fetch based on id
   const event = {
@@ -63,22 +62,42 @@ const EventDetails = () => {
     ]
   };
 
-  const handleBuyTickets = () => {
+  const handleBuyTickets = async () => {
     if (event.isHighDemand && event.ticketTypes.some(t => t.available < 100)) {
-      setIsInQueue(true);
-      setQueuePosition(Math.floor(Math.random() * 150) + 1);
+      // Check if user is already in queue
+      if (waitingListEntry) {
+        // User is already in queue, show queue system
+        return;
+      }
+      
+      // Join the waiting list
+      const success = await joinWaitingList();
+      if (!success) {
+        // If joining failed, still allow direct purchase
+        setShowTicketSelection(true);
+      }
     } else {
       setShowTicketSelection(true);
     }
   };
 
   const handleQueueComplete = () => {
-    setIsInQueue(false);
     setShowTicketSelection(true);
   };
 
-  if (isInQueue) {
-    return <QueueSystem position={queuePosition} onComplete={handleQueueComplete} />;
+  const handleLeaveQueue = () => {
+    // User left the queue, go back to event details
+  };
+
+  // Show queue system if user is in waiting list
+  if (waitingListEntry && ['waiting', 'offered'].includes(waitingListEntry.status)) {
+    return (
+      <QueueSystem 
+        eventId={id!} 
+        onComplete={handleQueueComplete}
+        onLeave={handleLeaveQueue}
+      />
+    );
   }
 
   if (showTicketSelection) {
@@ -215,11 +234,28 @@ const EventDetails = () => {
                     onClick={handleBuyTickets}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     size="lg"
+                    disabled={loading}
                   >
-                    Buy Tickets Now
+                    {loading ? 'Joining Queue...' : 
+                     waitingListEntry ? `Queue Position #${waitingListEntry.position}` : 
+                     'Buy Tickets Now'}
                   </Button>
 
-                  {event.isHighDemand && (
+                  {waitingListEntry && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 text-blue-600 mr-2" />
+                        <span className="text-sm text-blue-800 font-medium">
+                          You're in the queue
+                        </span>
+                      </div>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Position #{waitingListEntry.position} - click to view queue status
+                      </p>
+                    </div>
+                  )}
+
+                  {event.isHighDemand && !waitingListEntry && (
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                       <div className="flex items-center">
                         <Clock className="w-4 h-4 text-orange-600 mr-2" />
