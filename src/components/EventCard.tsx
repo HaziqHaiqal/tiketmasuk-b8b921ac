@@ -80,7 +80,7 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <div className="text-lg font-bold text-blue-600">
-              ${price}
+              RM {price}
             </div>
             <div className="text-xs text-gray-500">by {vendor}</div>
           </div>

@@ -35,13 +35,13 @@ const HeroSection = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" variant="secondary" asChild className="text-blue-700">
+            <Button size="lg" variant="secondary" asChild className="text-blue-700 bg-white hover:bg-gray-100">
               <Link to="/browse" className="flex items-center">
                 <Calendar className="w-5 h-5 mr-2" />
                 Browse Events
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white hover:text-blue-700" asChild>
+            <Button size="lg" className="text-white bg-green-600 hover:bg-green-700 border-2 border-green-600" asChild>
               <Link to="/products" className="flex items-center">
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Shop Products

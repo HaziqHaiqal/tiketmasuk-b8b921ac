@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
@@ -6,77 +5,21 @@ import EventCard from '@/components/EventCard';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Star, MapPin, Users } from 'lucide-react';
+import { useEvents } from '@/hooks/useEvents';
+import { useProducts } from '@/hooks/useProducts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
-  // Mock featured events
-  const featuredEvents = [
-    {
-      id: '1',
-      title: 'Summer Music Festival 2024',
-      description: 'Join us for an unforgettable weekend of music featuring top artists from around the world.',
-      date: '2024-07-15',
-      location: 'Central Park, NY',
-      price: 289,
-      image: '/placeholder.svg',
-      category: 'Music',
-      attendees: 1250,
-      rating: 4.8,
-      vendor: 'EventPro LLC'
-    },
-    {
-      id: '2',
-      title: 'Tech Conference 2024',
-      description: 'Discover the latest innovations in technology and network with industry leaders.',
-      date: '2024-08-20',
-      location: 'Convention Center, SF',
-      price: 899,
-      image: '/placeholder.svg',
-      category: 'Technology',
-      attendees: 850,
-      rating: 4.9,
-      vendor: 'TechEvents Inc'
-    },
-    {
-      id: '3',
-      title: 'Food & Wine Expo',
-      description: 'Experience culinary delights from local chefs and sample premium wines.',
-      date: '2024-09-10',
-      location: 'Downtown Plaza, LA',
-      price: 145,
-      image: '/placeholder.svg',
-      category: 'Food',
-      attendees: 600,
-      rating: 4.6,
-      vendor: 'Culinary Events'
-    }
-  ];
+  const { data: events, isLoading: eventsLoading } = useEvents();
+  const { data: products, isLoading: productsLoading } = useProducts();
 
-  // Mock featured products
-  const featuredProducts = [
-    {
-      id: '1',
-      name: 'Concert T-Shirt',
-      price: 45,
-      image: '/placeholder.svg',
-      event: 'Summer Music Festival 2024'
-    },
-    {
-      id: '2',
-      name: 'Tech Conference Hoodie',
-      price: 89,
-      image: '/placeholder.svg',
-      event: 'Tech Conference 2024'
-    },
-    {
-      id: '3',
-      name: 'Food Expo Tote Bag',
-      price: 25,
-      image: '/placeholder.svg',
-      event: 'Food & Wine Expo'
-    }
-  ];
+  // Get featured events (first 3)
+  const featuredEvents = events?.slice(0, 3) || [];
+  
+  // Get featured products (first 3)
+  const featuredProducts = products?.slice(0, 3) || [];
 
-  // Mock top organizers
+  // Mock top organizers (keeping as mock for now)
   const topOrganizers = [
     {
       id: '1',
@@ -119,11 +62,41 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredEvents.map((event) => (
-              <EventCard key={event.id} {...event} />
-            ))}
-          </div>
+          {eventsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : featuredEvents.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredEvents.map((event) => (
+                <EventCard 
+                  key={event.id} 
+                  id={event.id}
+                  title={event.title}
+                  description={event.description || ''}
+                  date={event.date}
+                  location={event.location}
+                  price={Number(event.price)}
+                  image={event.image || '/placeholder.svg'}
+                  category={event.category}
+                  attendees={event.attendees || 0}
+                  rating={Number(event.rating || 0)}
+                  vendor="Event Organizer"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600">No events available yet</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -137,25 +110,42 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <img 
-                  src={product.image} 
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3">From {product.event}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-blue-600">RM {product.price}</span>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Add to Cart</Button>
+          {productsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : featuredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredProducts.map((product) => (
+                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <img 
+                    src={product.image || '/placeholder.svg'} 
+                    alt={product.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-6">
+                    <h3 className="font-semibold text-lg mb-2">{product.title}</h3>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-blue-600">RM {product.price}</span>
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Add to Cart</Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600">No products available yet</p>
+            </div>
+          )}
         </div>
       </section>
 

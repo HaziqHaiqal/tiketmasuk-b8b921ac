@@ -6,52 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Filter, Grid, List } from 'lucide-react';
+import { useEvents } from '@/hooks/useEvents';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Browse = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  // Mock data
-  const events = [
-    {
-      id: '1',
-      title: 'Summer Music Festival 2024',
-      description: 'Join us for an unforgettable weekend of music featuring top artists from around the world.',
-      date: '2024-07-15',
-      location: 'Central Park, NY',
-      price: 89,
-      image: '/placeholder.svg',
-      category: 'Music',
-      attendees: 1250,
-      rating: 4.8,
-      vendor: 'EventPro LLC'
-    },
-    {
-      id: '2',
-      title: 'Tech Conference 2024',
-      description: 'Discover the latest innovations in technology and network with industry leaders.',
-      date: '2024-08-20',
-      location: 'Convention Center, SF',
-      price: 299,
-      image: '/placeholder.svg',
-      category: 'Technology',
-      attendees: 850,
-      rating: 4.9,
-      vendor: 'TechEvents Inc'
-    },
-    {
-      id: '3',
-      title: 'Food & Wine Expo',
-      description: 'Experience culinary delights from local chefs and sample premium wines.',
-      date: '2024-09-10',
-      location: 'Downtown Plaza, LA',
-      price: 45,
-      image: '/placeholder.svg',
-      category: 'Food',
-      attendees: 600,
-      rating: 4.6,
-      vendor: 'Culinary Events'
-    }
-  ];
+  const { data: events, isLoading, error } = useEvents();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -126,16 +86,52 @@ const Browse = () => {
         {/* Results */}
         <div className="mb-6">
           <p className="text-gray-600">
-            Showing <span className="font-semibold">{events.length}</span> events
+            Showing <span className="font-semibold">{events?.length || 0}</span> events
           </p>
         </div>
 
         {/* Events Grid */}
-        <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-          {events.map((event) => (
-            <EventCard key={event.id} {...event} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="space-y-4">
+                <Skeleton className="h-48 w-full rounded-lg" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600 mb-4">Error loading events</p>
+            <p className="text-gray-500 text-sm">Please try again later</p>
+          </div>
+        ) : !events || events.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 mb-4">No events available yet</p>
+            <p className="text-gray-500 text-sm">Check back later for new events!</p>
+          </div>
+        ) : (
+          <div className={`grid gap-6 ${viewMode === 'grid' ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {events.map((event) => (
+              <EventCard 
+                key={event.id} 
+                id={event.id}
+                title={event.title}
+                description={event.description || ''}
+                date={event.date}
+                location={event.location}
+                price={Number(event.price)}
+                image={event.image || '/placeholder.svg'}
+                category={event.category}
+                attendees={event.attendees || 0}
+                rating={Number(event.rating || 0)}
+                vendor="Event Organizer"
+              />
+            ))}
+          </div>
+        )}
 
         {/* Pagination */}
         <div className="mt-12 flex justify-center">

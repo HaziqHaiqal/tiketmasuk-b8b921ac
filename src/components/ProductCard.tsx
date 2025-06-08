@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
 
 interface ProductCardProps {
   id: string;
@@ -20,6 +21,7 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
+  id,
   title,
   description,
   price,
@@ -31,7 +33,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
   vendor,
   inStock
 }) => {
+  const { addToCart } = useShoppingCart();
   const discountPercentage = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+
+  const handleAddToCart = () => {
+    if (!inStock) return;
+    
+    addToCart({
+      id,
+      title,
+      price,
+      image
+    });
+  };
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col">
@@ -100,6 +114,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <Button 
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2" 
           disabled={!inStock}
+          onClick={handleAddToCart}
         >
           <ShoppingCart className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
           Add to Cart
