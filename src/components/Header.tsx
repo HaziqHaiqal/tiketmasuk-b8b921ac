@@ -9,7 +9,8 @@ import {
   LogOut,
   Settings,
   BarChart3,
-  X
+  X,
+  Clock
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -35,6 +36,9 @@ const Header = () => {
     }
   };
 
+  const isApprovedVendor = isVendor && profile?.approval_status === 'approved';
+  const isPendingVendor = isVendor && profile?.approval_status === 'pending';
+
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -56,6 +60,9 @@ const Header = () => {
             <Link to="/products" className="text-gray-700 hover:text-blue-600 font-medium text-sm">
               Products
             </Link>
+            <Link to="/organizers" className="text-gray-700 hover:text-blue-600 font-medium text-sm">
+              Organizers
+            </Link>
 
             {/* Cart */}
             <Button variant="ghost" size="icon" className="relative">
@@ -74,6 +81,9 @@ const Header = () => {
                   <Button variant="ghost" className="flex items-center space-x-2 text-sm">
                     <User className="w-4 h-4" />
                     <span className="hidden lg:block">{profile.name}</span>
+                    {isPendingVendor && (
+                      <Clock className="w-4 h-4 text-yellow-500" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white">
@@ -84,7 +94,14 @@ const Header = () => {
                     </Link>
                   </DropdownMenuItem>
                   
-                  {isVendor && (
+                  {isPendingVendor && (
+                    <DropdownMenuItem disabled>
+                      <Clock className="w-4 h-4 mr-2 text-yellow-500" />
+                      <span className="text-yellow-600">Approval Pending</span>
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {isApprovedVendor && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
@@ -165,6 +182,13 @@ const Header = () => {
             >
               Products
             </Link>
+            <Link 
+              to="/organizers" 
+              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Organizers
+            </Link>
             
             {loading ? (
               <div className="px-4 py-2">
@@ -172,8 +196,11 @@ const Header = () => {
               </div>
             ) : user && profile ? (
               <div className="border-t pt-2 mt-2">
-                <div className="px-4 py-2 text-sm font-medium text-gray-900">
+                <div className="px-4 py-2 text-sm font-medium text-gray-900 flex items-center">
                   {profile.name}
+                  {isPendingVendor && (
+                    <Clock className="w-4 h-4 ml-2 text-yellow-500" />
+                  )}
                 </div>
                 <Link 
                   to="/profile" 
@@ -182,7 +209,13 @@ const Header = () => {
                 >
                   Profile
                 </Link>
-                {isVendor && (
+                {isPendingVendor && (
+                  <div className="px-4 py-2 text-yellow-600 text-sm">
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Approval Pending
+                  </div>
+                )}
+                {isApprovedVendor && (
                   <Link 
                     to="/vendor/dashboard" 
                     className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"

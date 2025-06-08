@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -16,7 +15,7 @@ interface AuthContextType {
   profile: Profile | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  register: (name: string, email: string, password: string, role: 'customer' | 'vendor') => Promise<void>;
+  register: (name: string, email: string, password: string, role: 'customer' | 'vendor', additionalData?: any) => Promise<void>;
   isVendor: boolean;
   isAdmin: boolean;
   loading: boolean;
@@ -121,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: 'customer' | 'vendor') => {
+  const register = async (name: string, email: string, password: string, role: 'customer' | 'vendor', additionalData?: any) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -130,6 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           data: {
             name,
             role,
+            ...additionalData
           }
         }
       });
@@ -138,7 +138,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
-      toast.success('Registration successful! Please check your email to confirm your account.');
+      if (role === 'vendor') {
+        toast.success('Registration successful! Your vendor account is pending admin approval.');
+      } else {
+        toast.success('Registration successful! Please check your email to confirm your account.');
+      }
     } catch (error: any) {
       toast.error(error.message);
       throw error;

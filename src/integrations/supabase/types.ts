@@ -110,6 +110,59 @@ export type Database = {
           },
         ]
       }
+      organizers: {
+        Row: {
+          business_address: string | null
+          business_description: string | null
+          business_name: string
+          business_phone: string | null
+          created_at: string
+          events_count: number | null
+          id: string
+          image: string | null
+          location: string | null
+          rating: number | null
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_description?: string | null
+          business_name: string
+          business_phone?: string | null
+          created_at?: string
+          events_count?: number | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          rating?: number | null
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          business_address?: string | null
+          business_description?: string | null
+          business_name?: string
+          business_phone?: string | null
+          created_at?: string
+          events_count?: number | null
+          id?: string
+          image?: string | null
+          location?: string | null
+          rating?: number | null
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizers_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_orders: {
         Row: {
           created_at: string
@@ -223,6 +276,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approval_status: string | null
+          business_address: string | null
+          business_description: string | null
+          business_name: string | null
+          business_phone: string | null
+          business_registration_number: string | null
           created_at: string
           email: string
           id: string
@@ -231,6 +290,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string | null
+          business_address?: string | null
+          business_description?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          business_registration_number?: string | null
           created_at?: string
           email: string
           id: string
@@ -239,6 +304,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string | null
+          business_address?: string | null
+          business_description?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          business_registration_number?: string | null
           created_at?: string
           email?: string
           id?: string

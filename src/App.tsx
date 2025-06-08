@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,8 @@ import VendorDashboard from "./pages/VendorDashboard";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import CreateEvent from "./pages/CreateEvent";
 import NotFound from "./pages/NotFound";
+import AdminPanel from "./pages/AdminPanel";
+import Organizers from "./pages/Organizers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,8 @@ const App = () => (
               <Route path="/vendor/dashboard" element={<VendorDashboard />} />
               <Route path="/vendor/create-event" element={<CreateEvent />} />
               <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/organizers" element={<Organizers />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

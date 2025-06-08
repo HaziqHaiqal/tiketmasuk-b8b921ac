@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
@@ -15,6 +16,11 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'customer' | 'vendor'>('customer');
+  const [businessName, setBusinessName] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
+  const [businessAddress, setBusinessAddress] = useState('');
+  const [businessPhone, setBusinessPhone] = useState('');
+  const [businessRegistrationNumber, setBusinessRegistrationNumber] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
@@ -31,10 +37,24 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      await register(name, email, password, role);
-      // Redirect based on role
+      const userData = {
+        name,
+        role,
+        ...(role === 'vendor' && {
+          business_name: businessName,
+          business_description: businessDescription,
+          business_address: businessAddress,
+          business_phone: businessPhone,
+          business_registration_number: businessRegistrationNumber,
+          approval_status: 'pending'
+        })
+      };
+
+      await register(name, email, password, role, userData);
+      
       if (role === 'vendor') {
-        navigate('/vendor/dashboard');
+        alert('Registration successful! Your vendor account is pending admin approval. You will be notified once approved.');
+        navigate('/');
       } else {
         navigate('/customer/dashboard');
       }
@@ -63,7 +83,7 @@ const Register = () => {
         <Card className="bg-white shadow-xl">
           <CardHeader className="text-center">
             <div className="w-12 h-12 bg-blue-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">M</span>
+              <span className="text-white font-bold text-lg">T</span>
             </div>
             <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
             <p className="text-gray-600">Join our marketplace today</p>
@@ -155,11 +175,78 @@ const Register = () => {
                     <RadioGroupItem value="vendor" id="vendor" />
                     <Label htmlFor="vendor" className="cursor-pointer">
                       <span className="font-medium">Vendor</span>
-                      <p className="text-sm text-gray-600">Sell events and products</p>
+                      <p className="text-sm text-gray-600">Sell events and products (requires approval)</p>
                     </Label>
                   </div>
                 </RadioGroup>
               </div>
+
+              {role === 'vendor' && (
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="font-medium text-gray-900">Business Information</h3>
+                  
+                  <div>
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input
+                      id="businessName"
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="Enter your business name"
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessDescription">Business Description</Label>
+                    <Textarea
+                      id="businessDescription"
+                      value={businessDescription}
+                      onChange={(e) => setBusinessDescription(e.target.value)}
+                      placeholder="Describe your business"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessAddress">Business Address</Label>
+                    <Input
+                      id="businessAddress"
+                      type="text"
+                      value={businessAddress}
+                      onChange={(e) => setBusinessAddress(e.target.value)}
+                      placeholder="Enter your business address"
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessPhone">Business Phone</Label>
+                    <Input
+                      id="businessPhone"
+                      type="tel"
+                      value={businessPhone}
+                      onChange={(e) => setBusinessPhone(e.target.value)}
+                      placeholder="Enter your business phone"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessRegistrationNumber">Business Registration Number</Label>
+                    <Input
+                      id="businessRegistrationNumber"
+                      type="text"
+                      value={businessRegistrationNumber}
+                      onChange={(e) => setBusinessRegistrationNumber(e.target.value)}
+                      placeholder="Enter your business registration number"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-start space-x-2">
                 <input type="checkbox" className="mt-1" required />
