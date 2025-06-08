@@ -37,7 +37,8 @@ export const useWaitingList = (eventId?: string) => {
         return;
       }
 
-      setWaitingListEntry(data);
+      // Type cast the data to match our interface
+      setWaitingListEntry(data as WaitingListEntry);
     } catch (error) {
       console.error('Error in checkWaitingListStatus:', error);
     }
@@ -49,12 +50,14 @@ export const useWaitingList = (eventId?: string) => {
 
     setLoading(true);
     try {
+      // Let the database trigger handle position assignment
       const { data, error } = await supabase
         .from('waiting_list')
         .insert({
           user_id: user.id,
           event_id: eventId,
-          status: 'waiting'
+          status: 'waiting',
+          position: 0 // This will be overridden by the trigger
         })
         .select()
         .single();
@@ -68,7 +71,8 @@ export const useWaitingList = (eventId?: string) => {
         return false;
       }
 
-      setWaitingListEntry(data);
+      // Type cast the data to match our interface
+      setWaitingListEntry(data as WaitingListEntry);
       toast.success('Successfully joined the waiting list!');
       return true;
     } catch (error) {
