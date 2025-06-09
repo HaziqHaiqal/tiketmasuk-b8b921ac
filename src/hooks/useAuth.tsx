@@ -8,6 +8,7 @@ interface Profile {
   name: string;
   email: string;
   role: 'customer' | 'vendor' | 'admin';
+  approval_status?: string;
 }
 
 interface AuthContextType {
@@ -80,7 +81,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: data.id,
         name: data.name,
         email: data.email,
-        role: data.role as 'customer' | 'vendor' | 'admin'
+        role: data.role as 'customer' | 'vendor' | 'admin',
+        approval_status: data.approval_status
       };
 
       setProfile(profileData);
