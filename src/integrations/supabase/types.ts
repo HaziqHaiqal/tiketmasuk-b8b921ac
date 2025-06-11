@@ -9,6 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          booking_details: Json
+          booking_type: string
+          completed_at: string | null
+          created_at: string
+          customer_address: string | null
+          customer_email: string
+          customer_first_name: string | null
+          customer_last_name: string | null
+          customer_phone: string | null
+          id: string
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          booking_details?: Json
+          booking_type: string
+          completed_at?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_email: string
+          customer_first_name?: string | null
+          customer_last_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          booking_details?: Json
+          booking_type?: string
+          completed_at?: string | null
+          created_at?: string
+          customer_address?: string | null
+          customer_email?: string
+          customer_first_name?: string | null
+          customer_last_name?: string | null
+          customer_phone?: string | null
+          id?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       customer_profiles: {
         Row: {
           address: string | null
@@ -78,36 +135,6 @@ export type Database = {
         }
         Relationships: []
       }
-      event_bookings: {
-        Row: {
-          created_at: string
-          event_id: string
-          id: string
-          quantity: number
-          status: string
-          total_price: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          event_id: string
-          id?: string
-          quantity?: number
-          status?: string
-          total_price: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          event_id?: string
-          id?: string
-          quantity?: number
-          status?: string
-          total_price?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       event_promotions: {
         Row: {
           created_at: string
@@ -149,62 +176,6 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "vendor_subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_purchases: {
-        Row: {
-          bill_code: string | null
-          created_at: string
-          customer_email: string | null
-          customer_phone: string | null
-          event_id: string
-          id: string
-          payment_method: string | null
-          payment_status: string | null
-          quantity: number
-          total_price: number
-          unit_price: number
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          bill_code?: string | null
-          created_at?: string
-          customer_email?: string | null
-          customer_phone?: string | null
-          event_id: string
-          id?: string
-          payment_method?: string | null
-          payment_status?: string | null
-          quantity?: number
-          total_price: number
-          unit_price: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          bill_code?: string | null
-          created_at?: string
-          customer_email?: string | null
-          customer_phone?: string | null
-          event_id?: string
-          id?: string
-          payment_method?: string | null
-          payment_status?: string | null
-          quantity?: number
-          total_price?: number
-          unit_price?: number
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_purchases_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -310,44 +281,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      product_orders: {
-        Row: {
-          created_at: string
-          id: string
-          product_id: string
-          quantity: number
-          status: string
-          total_price: number
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          product_id: string
-          quantity?: number
-          status?: string
-          total_price: number
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          product_id?: string
-          quantity?: number
-          status?: string
-          total_price?: number
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_orders_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       products: {
         Row: {
@@ -505,6 +438,7 @@ export type Database = {
       tickets: {
         Row: {
           amount: number | null
+          booking_id: string | null
           created_at: string | null
           event_id: string
           guest_email: string | null
@@ -518,6 +452,7 @@ export type Database = {
         }
         Insert: {
           amount?: number | null
+          booking_id?: string | null
           created_at?: string | null
           event_id: string
           guest_email?: string | null
@@ -531,6 +466,7 @@ export type Database = {
         }
         Update: {
           amount?: number | null
+          booking_id?: string | null
           created_at?: string | null
           event_id?: string
           guest_email?: string | null
@@ -543,6 +479,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_event_id_fkey"
             columns: ["event_id"]

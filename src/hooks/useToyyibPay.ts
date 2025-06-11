@@ -6,8 +6,11 @@ interface UseToyyibPayProps {
   eventId: string;
   eventName: string;
   totalAmount: number;
+  customerFirstName: string;
+  customerLastName: string;
   customerEmail: string;
   customerPhone: string;
+  customerAddress?: string;
   quantity?: number;
 }
 
@@ -19,8 +22,11 @@ export const useToyyibPay = () => {
     eventId,
     eventName,
     totalAmount,
+    customerFirstName,
+    customerLastName,
     customerEmail,
     customerPhone,
+    customerAddress = '',
     quantity = 1,
   }: UseToyyibPayProps) => {
     console.log('Starting payment creation process...');
@@ -37,8 +43,11 @@ export const useToyyibPay = () => {
         event_id: eventId,
         quantity: quantity.toString(),
         total_amount: totalAmount.toString(),
+        customer_first_name: customerFirstName,
+        customer_last_name: customerLastName,
         customer_email: customerEmail,
-        customer_phone: customerPhone
+        customer_phone: customerPhone,
+        customer_address: customerAddress
       });
       
       const returnUrl = `${baseUrl}/payment/success?${successParams.toString()}`;
@@ -51,7 +60,7 @@ export const useToyyibPay = () => {
         billReturnUrl: returnUrl,
         billCallbackUrl: callbackUrl,
         billExternalReferenceNo: generateBillExternalReference(),
-        billTo: customerEmail.substring(0, 30), // Limit length
+        billTo: `${customerFirstName} ${customerLastName}`.substring(0, 30), // Limit length
         billEmail: customerEmail,
         billPhone: customerPhone.replace(/[^\d+]/g, ''), // Remove non-numeric chars except +
         billExpiryDays: 1,

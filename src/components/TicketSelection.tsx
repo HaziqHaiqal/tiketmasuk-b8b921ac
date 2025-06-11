@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,8 +35,11 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
   const [promoCode, setPromoCode] = useState('');
+  const [customerFirstName, setCustomerFirstName] = useState('');
+  const [customerLastName, setCustomerLastName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
   const { createPayment, loading, error } = useToyyibPay();
   const { toast } = useToast();
 
@@ -97,10 +101,10 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
       return;
     }
 
-    if (!customerEmail || !customerPhone) {
+    if (!customerFirstName || !customerLastName || !customerEmail || !customerPhone) {
       toast({
         title: "Missing information",
-        description: "Please provide your email and phone number.",
+        description: "Please provide your complete information (first name, last name, email, and phone number).",
         variant: "destructive",
       });
       return;
@@ -111,9 +115,12 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
         eventId: event.id,
         eventName: event.title,
         totalAmount: totalPrice,
+        customerFirstName,
+        customerLastName,
         customerEmail,
         customerPhone,
-        quantity: totalTickets, // Pass the total quantity
+        customerAddress,
+        quantity: totalTickets,
       });
       
       toast({
@@ -164,6 +171,26 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                     <h3 className="font-semibold mb-3">Customer Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
+                        <label className="block text-sm font-medium mb-1">First Name *</label>
+                        <Input
+                          type="text"
+                          value={customerFirstName}
+                          onChange={(e) => setCustomerFirstName(e.target.value)}
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Last Name *</label>
+                        <Input
+                          type="text"
+                          value={customerLastName}
+                          onChange={(e) => setCustomerLastName(e.target.value)}
+                          placeholder="Doe"
+                          required
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium mb-1">Email *</label>
                         <Input
                           type="email"
@@ -181,6 +208,15 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                           onChange={(e) => setCustomerPhone(e.target.value)}
                           placeholder="+60123456789"
                           required
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Address (Optional)</label>
+                        <Input
+                          type="text"
+                          value={customerAddress}
+                          onChange={(e) => setCustomerAddress(e.target.value)}
+                          placeholder="Your address"
                         />
                       </div>
                     </div>
@@ -297,7 +333,7 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                         onClick={handleCheckout}
                         className="w-full bg-blue-600 hover:bg-blue-700"
                         size="lg"
-                        disabled={loading || !customerEmail || !customerPhone}
+                        disabled={loading || !customerFirstName || !customerLastName || !customerEmail || !customerPhone}
                       >
                         <ShoppingCart className="w-4 h-4 mr-2" />
                         {loading ? 'Processing...' : 'Proceed to Payment'}
