@@ -1,22 +1,31 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Calendar, MapPin, Users, Star, Clock, ArrowLeft, Package, HelpCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Star, ArrowLeft, Package, HelpCircle } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
 import EventProductCard from '@/components/EventProductCard';
+import TicketSelectionCard from '@/components/TicketSelectionCard';
+import AuthModal from '@/components/AuthModal';
 import { useWaitingList } from '@/hooks/useWaitingList';
 import { useEvent } from '@/hooks/useEvents';
 import { useProducts, Product } from '@/hooks/useProducts';
+import { useTicketReservation } from '@/hooks/useTicketReservation';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const EventDetails = () => {
   const { id } = useParams();
   const [showTicketSelection, setShowTicketSelection] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
   const { waitingListEntry, joinWaitingList, loading } = useWaitingList(id);
+  const { reservation, createReservation } = useTicketReservation(id);
+  const { user } = useAuth();
   const { toast } = useToast();
   
   // Fetch real event data
@@ -27,7 +36,7 @@ const EventDetails = () => {
 
   // Mock event data with real ID - in a real app, this would come from the database
   const event = {
-    id: id || '1', // Use the actual ID from the URL
+    id: id || '1',
     title: eventData?.title || 'Summer Music Festival 2024',
     description: eventData?.description || 'Join us for an unforgettable weekend of music featuring top artists from around the world. Experience live performances, food trucks, and an amazing atmosphere in the heart of Central Park.',
     fullDescription: 'This three-day festival brings together the best artists from various genres including rock, pop, electronic, and indie music. With multiple stages, art installations, and local food vendors, this is more than just a concert - it\'s a cultural experience.',
@@ -93,7 +102,9 @@ const EventDetails = () => {
     ]
   };
 
-  const handleBuyTickets = async () => {
+  const handleBuyTickets = async (tickets: Record<string, number>) => {
+    setSelectedTickets(tickets);
+    
     if (event.isHighDemand && event.ticketTypes.some(t => t.available < 100)) {
       // Check if user is already in queue
       if (waitingListEntry) {
@@ -105,11 +116,23 @@ const EventDetails = () => {
       const success = await joinWaitingList();
       if (!success) {
         // If joining failed, still allow direct purchase
-        setShowTicketSelection(true);
+        setShowAuthModal(true);
       }
     } else {
-      setShowTicketSelection(true);
+      setShowAuthModal(true);
     }
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    // Proceed to ticket selection with pre-filled quantities
+    setShowTicketSelection(true);
+  };
+
+  const handleGuestContinue = () => {
+    setShowAuthModal(false);
+    // Proceed to ticket selection as guest
+    setShowTicketSelection(true);
   };
 
   const handleQueueComplete = () => {
@@ -164,7 +187,19 @@ const EventDetails = () => {
   }
 
   if (showTicketSelection) {
-    return <TicketSelection event={event} onBack={() => setShowTicketSelection(false)} />;
+    return (
+      <TicketSelection 
+        event={{
+          ...event,
+          // Pre-populate selected tickets
+          ticketTypes: event.ticketTypes.map(type => ({
+            ...type,
+            preSelected: selectedTickets[type.id] || 0
+          }))
+        }} 
+        onBack={() => setShowTicketSelection(false)} 
+      />
+    );
   }
 
   return (
@@ -267,32 +302,6 @@ const EventDetails = () => {
               </CardContent>
             </Card>
 
-            {/* FAQs */}
-            {event.faqs && event.faqs.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <HelpCircle className="w-5 h-5 mr-2" />
-                    Frequently Asked Questions
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Accordion type="single" collapsible className="w-full">
-                    {event.faqs.map((faq: any, index: number) => (
-                      <AccordionItem key={index} value={`item-${index}`}>
-                        <AccordionTrigger className="text-left">
-                          {faq.question}
-                        </AccordionTrigger>
-                        <AccordionContent className="text-gray-600">
-                          {faq.answer}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Event Products */}
             {products && products.length > 0 && (
               <Card>
@@ -330,89 +339,68 @@ const EventDetails = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* FAQs - moved to bottom */}
+            {event.faqs && event.faqs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <HelpCircle className="w-5 h-5 mr-2" />
+                    Frequently Asked Questions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Accordion type="single" collapsible className="w-full">
+                    {event.faqs.map((faq: any, index: number) => (
+                      <AccordionItem key={index} value={`item-${index}`}>
+                        <AccordionTrigger className="text-left">
+                          {faq.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-gray-600">
+                          {faq.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Get Your Tickets moved to top */}
           <div>
-            <Card className="sticky top-8">
-              <CardHeader>
-                <CardTitle>Get Your Tickets</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">From RM{event.price}</p>
-                    <p className="text-sm text-gray-600">per person</p>
-                  </div>
-                  
-                  {/* Ticket availability indicator */}
-                  <div className="space-y-2">
-                    {event.ticketTypes.map((ticket) => (
-                      <div key={ticket.id} className="flex justify-between items-center text-sm">
-                        <span>{ticket.name}</span>
-                        <span className={`font-medium ${ticket.soldOut ? 'text-red-600' : ticket.available < 50 ? 'text-orange-600' : 'text-green-600'}`}>
-                          {ticket.soldOut ? 'Sold Out' : `${ticket.available} left`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+            <TicketSelectionCard
+              ticketTypes={event.ticketTypes}
+              onBuyTickets={handleBuyTickets}
+              loading={loading}
+              waitingListEntry={waitingListEntry}
+              isHighDemand={event.isHighDemand}
+            />
 
-                  <Button 
-                    onClick={handleBuyTickets}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    size="lg"
-                    disabled={loading}
-                  >
-                    {loading ? 'Joining Queue...' : 
-                     waitingListEntry ? `Queue Position #${waitingListEntry.position}` : 
-                     'Buy Tickets Now'}
-                  </Button>
-
-                  {waitingListEntry && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 text-blue-600 mr-2" />
-                        <span className="text-sm text-blue-800 font-medium">
-                          You're in the queue
-                        </span>
-                      </div>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Position #{waitingListEntry.position} - click to view queue status
-                      </p>
-                    </div>
-                  )}
-
-                  {event.isHighDemand && !waitingListEntry && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 text-orange-600 mr-2" />
-                        <span className="text-sm text-orange-800 font-medium">High Demand Event</span>
-                      </div>
-                      <p className="text-xs text-orange-700 mt-1">
-                        You may be placed in a queue during checkout
-                      </p>
-                    </div>
-                  )}
-
-                  {products && products.length > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
-                      <div className="flex items-center">
-                        <Package className="w-4 h-4 text-green-600 mr-2" />
-                        <span className="text-sm text-green-800 font-medium">
-                          Merchandise Available
-                        </span>
-                      </div>
-                      <p className="text-xs text-green-700 mt-1">
-                        Check out the merchandise section below for event souvenirs and extras
-                      </p>
-                    </div>
-                  )}
+            {products && products.length > 0 && (
+              <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="flex items-center">
+                  <Package className="w-4 h-4 text-green-600 mr-2" />
+                  <span className="text-sm text-green-800 font-medium">
+                    Merchandise Available
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+                <p className="text-xs text-green-700 mt-1">
+                  Check out the merchandise section for event souvenirs and extras
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onGuestContinue={handleGuestContinue}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 };

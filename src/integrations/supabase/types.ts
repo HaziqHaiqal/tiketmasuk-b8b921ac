@@ -315,6 +315,53 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_reservations: {
+        Row: {
+          created_at: string
+          event_id: string
+          expires_at: string
+          id: string
+          quantity: number
+          reserved_at: string
+          status: string
+          ticket_type_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          expires_at?: string
+          id?: string
+          quantity?: number
+          reserved_at?: string
+          status?: string
+          ticket_type_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          expires_at?: string
+          id?: string
+          quantity?: number
+          reserved_at?: string
+          status?: string
+          ticket_type_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_reservations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -345,6 +392,7 @@ export type Database = {
           event_id: string
           id: string
           offer_expires_at: number | null
+          position: number | null
           status: string
           updated_at: string | null
           user_id: string
@@ -354,6 +402,7 @@ export type Database = {
           event_id: string
           id?: string
           offer_expires_at?: number | null
+          position?: number | null
           status?: string
           updated_at?: string | null
           user_id: string
@@ -363,6 +412,7 @@ export type Database = {
           event_id?: string
           id?: string
           offer_expires_at?: number | null
+          position?: number | null
           status?: string
           updated_at?: string | null
           user_id?: string
@@ -382,6 +432,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      expire_ticket_reservations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -406,6 +460,10 @@ export type Database = {
       is_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
+      }
+      process_ticket_queue: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       user_has_permission: {
         Args: { permission_name: string }

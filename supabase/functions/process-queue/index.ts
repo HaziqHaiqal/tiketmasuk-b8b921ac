@@ -15,16 +15,45 @@ serve(async (req) => {
 
   try {
     const supabaseClient = createClient(
-      Denv.get('SUPABASE_URL') ?? '',
-      Denv.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
     const { eventId, action } = await req.json()
+
+    if (action === 'process_queue') {
+      // Call the database function to process the queue
+      const { error } = await supabaseClient.rpc('process_ticket_queue')
+
+      if (error) {
+        throw error
+      }
+
+      return new Response(
+        JSON.stringify({ message: 'Queue processed successfully' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
+    }
+
+    if (action === 'expire_reservations') {
+      // Call the database function to expire old reservations
+      const { error } = await supabaseClient.rpc('expire_ticket_reservations')
+
+      if (error) {
+        throw error
+      }
+
+      return new Response(
+        JSON.stringify({ message: 'Reservations expired successfully' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
+    }
 
     if (action === 'process_next') {
       // Move the next person in queue to "offered" status
@@ -51,15 +80,15 @@ serve(async (req) => {
         )
       }
 
-      // Set offer expiration (15 minutes from now)
+      // Set offer expiration (20 minutes from now)
       const offerExpiresAt = new Date()
-      offerExpiresAt.setMinutes(offerExpiresAt.getMinutes() + 15)
+      offerExpiresAt.setMinutes(offerExpiresAt.getMinutes() + 20)
 
       const { error: updateError } = await supabaseClient
         .from('waiting_list')
         .update({
           status: 'offered',
-          offer_expires_at: offerExpiresAt.toISOString(),
+          offer_expires_at: Math.floor(offerExpiresAt.getTime()),
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInLine.id)
@@ -73,29 +102,6 @@ serve(async (req) => {
           message: 'Next person offered tickets',
           entry: nextInLine 
         }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      )
-    }
-
-    if (action === 'expire_offers') {
-      // Expire old offers and move people back to waiting
-      const now = new Date().toISOString()
-      
-      const { error: expireError } = await supabaseClient
-        .from('waiting_list')
-        .update({ status: 'expired' })
-        .eq('status', 'offered')
-        .lt('offer_expires_at', now)
-
-      if (expireError) {
-        throw expireError
-      }
-
-      return new Response(
-        JSON.stringify({ message: 'Expired offers processed' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200 
