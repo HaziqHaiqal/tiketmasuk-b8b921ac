@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -126,8 +127,8 @@ const EventDetails = () => {
     if (firstTicketType && quantity > 0) {
       const success = await createReservation(firstTicketType, quantity);
       if (success) {
-        // Navigate to reservation page instead of setting state
-        navigate(`/event/${id}/reservation`);
+        // Navigate to ticket details page directly
+        navigate(`/event/${id}/tickets`);
       }
     }
   };
@@ -177,23 +178,12 @@ const EventDetails = () => {
     );
   }
 
-  // Show reservation page if user has reserved tickets
-  if (showReservationPage && selectedTickets) {
-    return (
-      <TicketReservationPage
-        selectedTickets={selectedTickets}
-        ticketTypes={event.ticketTypes}
-        eventTitle={event.title}
-      />
-    );
-  }
-
   // Show queue system if user is in waiting list
   if (waitingListEntry && ['waiting', 'offered'].includes(waitingListEntry.status)) {
     return (
       <QueueSystem 
         eventId={id!} 
-        onComplete={() => navigate(`/event/${id}/reservation`)}
+        onComplete={() => navigate(`/event/${id}/tickets`)}
         onLeave={() => {}}
       />
     );
@@ -403,5 +393,3 @@ const EventDetails = () => {
 };
 
 export default EventDetails;
-
-}
