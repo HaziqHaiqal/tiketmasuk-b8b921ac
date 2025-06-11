@@ -40,7 +40,10 @@ export const useTicketReservation = (eventId?: string) => {
         return;
       }
 
-      setReservation(data);
+      // Type cast the data to ensure proper typing
+      if (data) {
+        setReservation(data as TicketReservation);
+      }
     } catch (error) {
       console.error('Error in checkReservation:', error);
     }
@@ -69,7 +72,8 @@ export const useTicketReservation = (eventId?: string) => {
         return false;
       }
 
-      setReservation(data);
+      // Type cast the data to ensure proper typing
+      setReservation(data as TicketReservation);
       toast.success(`Tickets reserved! You have 20 minutes to complete purchase.`);
       return true;
     } catch (error) {
