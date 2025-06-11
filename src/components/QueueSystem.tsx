@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Ticket, X, Calendar, MapPin, Clock } from 'lucide-react';
 import { useWaitingList } from '@/hooks/useWaitingList';
+import { useEvent } from '@/hooks/useEvents';
 
 interface QueueSystemProps {
   eventId: string;
@@ -13,8 +14,13 @@ interface QueueSystemProps {
 
 const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave }) => {
   const { waitingListEntry, leaveWaitingList } = useWaitingList(eventId);
+  const { data: eventData } = useEvent(eventId);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [queueStats, setQueueStats] = useState({
+    totalInQueue: 1,
+    availableTickets: 50
+  });
 
   useEffect(() => {
     if (waitingListEntry?.offer_expires_at) {
@@ -36,10 +42,28 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
     }
   }, [waitingListEntry?.offer_expires_at]);
 
+  // Simulate real-time queue updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setQueueStats(prev => ({
+        ...prev,
+        totalInQueue: Math.max(1, prev.totalInQueue + Math.floor(Math.random() * 3) - 1)
+      }));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes} minutes ${remainingSeconds} seconds`;
+  };
+
+  const formatTimeCompact = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
   };
 
   const handlePurchaseTicket = () => {
@@ -73,36 +97,38 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
         <Card className="mb-6 bg-white shadow-lg border-0">
           <CardContent className="p-6">
             <div className="text-center">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">NBA Finals 2024 - Game 1</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+                {eventData?.name || 'NBA Finals 2024 - Game 1'}
+              </h1>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
                 <div className="flex items-center justify-center">
                   <MapPin className="w-4 h-4 mr-2 text-blue-600" />
-                  Madison Square Garden, New York
+                  {eventData?.location || 'Madison Square Garden, New York'}
                 </div>
                 <div className="flex items-center justify-center">
                   <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-                  9/11/2025
+                  {eventData?.event_date ? new Date(eventData.event_date).toLocaleDateString() : '9/11/2025'}
                 </div>
                 <div className="flex items-center justify-center">
                   <Ticket className="w-4 h-4 mr-2 text-blue-600" />
-                  50 / 50 available
+                  {queueStats.availableTickets} / {queueStats.availableTickets} available
                 </div>
               </div>
               
               <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full font-semibold text-lg">
-                RM 899.99
+                RM {eventData?.price || '899.99'}
               </div>
               
               <p className="text-gray-600 mt-4">
-                <span className="text-orange-600 font-medium">(1 person trying to buy)</span>
+                <span className="text-orange-600 font-medium">({queueStats.totalInQueue} {queueStats.totalInQueue === 1 ? 'person' : 'people'} trying to buy)</span>
               </p>
             </div>
           </CardContent>
         </Card>
 
         <p className="text-gray-700 text-center mb-6 text-lg">
-          Witness the opening game of the NBA Finals!
+          {eventData?.description || 'Witness the opening game of the NBA Finals!'}
         </p>
 
         {/* Queue Status Card */}
@@ -125,7 +151,7 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-3xl font-bold">{timeLeft > 0 ? formatTime(timeLeft) : '00:00'}</div>
+                      <div className="text-3xl font-bold">{timeLeft > 0 ? formatTimeCompact(timeLeft) : '00:00'}</div>
                       <div className="text-sm text-white/80">Time remaining</div>
                     </div>
                   </div>
@@ -189,8 +215,23 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
                       <span className="font-semibold text-blue-800">Please wait</span>
                     </div>
                     <p className="text-blue-700">
-                      We're processing other customers ahead of you. You'll be notified when it's your turn to purchase tickets.
+                      We're processing other customers ahead of you. You'll be notified when it's your turn to purchase tickets. 
+                      <strong> Each person gets 20 minutes to complete their purchase.</strong>
                     </p>
+                  </div>
+
+                  {/* Queue Information */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">People in queue:</span>
+                        <div className="font-bold text-lg text-blue-600">{queueStats.totalInQueue}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Tickets available:</span>
+                        <div className="font-bold text-lg text-green-600">{queueStats.availableTickets}</div>
+                      </div>
+                    </div>
                   </div>
                   
                   <Button 

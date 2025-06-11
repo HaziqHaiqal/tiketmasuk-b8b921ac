@@ -4,7 +4,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Users, Star, Clock, ArrowLeft, Package } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Calendar, MapPin, Users, Star, Clock, ArrowLeft, Package, HelpCircle } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
 import EventProductCard from '@/components/EventProductCard';
@@ -45,6 +46,7 @@ const EventDetails = () => {
     reviews: 324,
     vendor: 'EventPro LLC',
     isHighDemand: true,
+    faqs: eventData?.faqs || [],
     ticketTypes: [
       {
         id: 'general',
@@ -248,16 +250,42 @@ const EventDetails = () => {
               </CardContent>
             </Card>
 
+            {/* FAQs */}
+            {event.faqs && event.faqs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <HelpCircle className="w-5 h-5 mr-2" />
+                    Frequently Asked Questions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Accordion type="single" collapsible className="w-full">
+                    {event.faqs.map((faq: any, index: number) => (
+                      <AccordionItem key={index} value={`item-${index}`}>
+                        <AccordionTrigger className="text-left">
+                          {faq.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-gray-600">
+                          {faq.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Event Products */}
             {products && products.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Package className="w-5 h-5 mr-2" />
-                    Event Merchandise (Optional)
+                    Event Merchandise
                   </CardTitle>
                   <p className="text-gray-600 text-sm">
-                    Enhance your event experience with optional merchandise and add-ons
+                    Enhance your event experience with merchandise and add-ons
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -272,7 +300,7 @@ const EventDetails = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className={`grid gap-6 ${products.length === 1 ? 'grid-cols-1 max-w-md' : 'grid-cols-1 md:grid-cols-2'}`}>
                       {products.map((product) => (
                         <EventProductCard
                           key={product.id}
@@ -292,9 +320,6 @@ const EventDetails = () => {
             <Card className="sticky top-8">
               <CardHeader>
                 <CardTitle>Get Your Tickets</CardTitle>
-                <p className="text-sm text-gray-600">
-                  <span className="text-red-600 font-medium">*Required</span> - You must purchase at least one ticket to attend this event
-                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -357,7 +382,7 @@ const EventDetails = () => {
                       <div className="flex items-center">
                         <Package className="w-4 h-4 text-green-600 mr-2" />
                         <span className="text-sm text-green-800 font-medium">
-                          Optional Add-ons Available
+                          Merchandise Available
                         </span>
                       </div>
                       <p className="text-xs text-green-700 mt-1">
