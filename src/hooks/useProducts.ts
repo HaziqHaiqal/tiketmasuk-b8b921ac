@@ -5,10 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ProductVariant {
   id: string;
   product_id: string;
-  variant_name: string;
-  variant_value: string;
+  variant_combination: Record<string, string>; // e.g., {"Size": "M", "Color": "Red"}
   price_adjustment: number;
   stock_quantity: number;
+  sku: string | null;
   is_available: boolean;
 }
 
