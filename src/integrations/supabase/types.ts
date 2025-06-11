@@ -315,6 +315,50 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_holders: {
+        Row: {
+          created_at: string
+          holder_email: string
+          holder_ic_passport: string | null
+          holder_name: string
+          holder_phone: string | null
+          id: string
+          reservation_id: string
+          ticket_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          holder_email: string
+          holder_ic_passport?: string | null
+          holder_name: string
+          holder_phone?: string | null
+          id?: string
+          reservation_id: string
+          ticket_number?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          holder_email?: string
+          holder_ic_passport?: string | null
+          holder_name?: string
+          holder_phone?: string | null
+          id?: string
+          reservation_id?: string
+          ticket_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_holders_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_reservations: {
         Row: {
           created_at: string
@@ -324,6 +368,7 @@ export type Database = {
           quantity: number
           reserved_at: string
           status: string
+          ticket_details: Json | null
           ticket_type_id: string
           updated_at: string
           user_id: string
@@ -336,6 +381,7 @@ export type Database = {
           quantity?: number
           reserved_at?: string
           status?: string
+          ticket_details?: Json | null
           ticket_type_id: string
           updated_at?: string
           user_id: string
@@ -348,6 +394,7 @@ export type Database = {
           quantity?: number
           reserved_at?: string
           status?: string
+          ticket_details?: Json | null
           ticket_type_id?: string
           updated_at?: string
           user_id?: string
@@ -432,6 +479,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_reservation: {
+        Args: { reservation_uuid: string }
+        Returns: boolean
+      }
       expire_ticket_reservations: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -451,6 +502,14 @@ export type Database = {
           event_price: number
           event_image: string
           promotion_expires_at: string
+        }[]
+      }
+      get_queue_stats: {
+        Args: { event_uuid: string }
+        Returns: {
+          total_waiting: number
+          current_position: number
+          user_in_queue: boolean
         }[]
       }
       get_user_roles: {

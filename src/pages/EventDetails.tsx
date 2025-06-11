@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,7 +126,8 @@ const EventDetails = () => {
     if (firstTicketType && quantity > 0) {
       const success = await createReservation(firstTicketType, quantity);
       if (success) {
-        setShowReservationPage(true);
+        // Navigate to reservation page instead of setting state
+        navigate(`/event/${id}/reservation`);
       }
     }
   };
@@ -135,13 +135,13 @@ const EventDetails = () => {
   const handleGuestContinue = async () => {
     setShowAuthModal(false);
     
-    // For guest users, create reservation without user authentication
-    const firstTicketType = Object.keys(selectedTickets)[0];
+    // For guest users, navigate directly to ticket details
     const quantity = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
     
-    if (firstTicketType && quantity > 0) {
-      // For guests, we might need different handling or just proceed to checkout
-      setShowReservationPage(true);
+    if (quantity > 0) {
+      // Store selected tickets in localStorage for guest users
+      localStorage.setItem('guestTickets', JSON.stringify(selectedTickets));
+      navigate(`/event/${id}/tickets`);
     }
   };
 
@@ -193,7 +193,7 @@ const EventDetails = () => {
     return (
       <QueueSystem 
         eventId={id!} 
-        onComplete={() => setShowReservationPage(true)}
+        onComplete={() => navigate(`/event/${id}/reservation`)}
         onLeave={() => {}}
       />
     );
@@ -403,3 +403,5 @@ const EventDetails = () => {
 };
 
 export default EventDetails;
+
+}

@@ -4,9 +4,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { useTicketReservation } from '@/hooks/useTicketReservation';
+import { useQueueStats } from '@/hooks/useQueueStats';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface TicketReservationPageProps {
   selectedTickets: Record<string, number>;
@@ -28,6 +30,8 @@ const TicketReservationPage: React.FC<TicketReservationPageProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { reservation } = useTicketReservation(eventId);
+  const { queueStats, cancelReservation } = useQueueStats(eventId);
+  const { toast } = useToast();
   const [timeLeft, setTimeLeft] = useState<number>(20 * 60); // 20 minutes in seconds
 
   // Calculate total price
@@ -68,19 +72,53 @@ const TicketReservationPage: React.FC<TicketReservationPageProps> = ({
     }
   }, [reservation, navigate, eventId]);
 
-  const handleContinueToCheckout = () => {
-    // Navigate to billing details page
-    navigate(`/event/${eventId}/checkout`);
+  const handleContinueToTicketDetails = () => {
+    // Navigate to ticket details page
+    navigate(`/event/${eventId}/tickets`);
   };
 
-  const handleCancelReservation = () => {
-    // Navigate back to event details
-    navigate(`/event/${eventId}`);
+  const handleCancelReservation = async () => {
+    if (!reservation) return;
+    
+    try {
+      await cancelReservation(reservation.id);
+      toast({
+        title: "Reservation Cancelled",
+        description: "Your reservation has been cancelled and the queue has been updated.",
+      });
+      navigate(`/event/${eventId}`);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel reservation. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Timer and Queue Info */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-orange-600">
+                <Clock className="w-5 h-5" />
+                <span className="font-semibold">Time remaining: {formatTime(timeLeft)}</span>
+              </div>
+              {queueStats.totalWaiting > 0 && (
+                <div className="flex items-center space-x-2 text-blue-600">
+                  <Users className="w-5 h-5" />
+                  <span className="font-semibold">{queueStats.totalWaiting} people in queue</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto p-4 pt-8">
         <Card>
           <CardHeader className="text-center border-b">
             <div className="flex items-center justify-center mb-4">
@@ -93,6 +131,27 @@ const TicketReservationPage: React.FC<TicketReservationPageProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-6 p-6">
+            {/* Queue Status */}
+            {queueStats.userInQueue && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center justify-center space-x-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <span className="text-blue-800 font-medium">Queue Status</span>
+                </div>
+                <div className="text-center mt-2">
+                  <p className="text-blue-700">
+                    {queueStats.currentPosition > 0 
+                      ? `You are position #${queueStats.currentPosition} in the queue`
+                      : 'You have been offered tickets!'
+                    }
+                  </p>
+                  <p className="text-sm text-blue-600 mt-1">
+                    Total people waiting: {queueStats.totalWaiting}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Timer */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-center justify-center space-x-2">
@@ -153,6 +212,7 @@ const TicketReservationPage: React.FC<TicketReservationPageProps> = ({
                 <li>• Your tickets are temporarily reserved for 20 minutes</li>
                 <li>• Complete your purchase before the timer expires</li>
                 <li>• If time expires, you'll need to start over</li>
+                <li>• Each ticket requires individual holder information</li>
                 <li>• Prices and availability are guaranteed during this reservation</li>
               </ul>
             </div>
@@ -167,11 +227,11 @@ const TicketReservationPage: React.FC<TicketReservationPageProps> = ({
                 Cancel Reservation
               </Button>
               <Button
-                onClick={handleContinueToCheckout}
+                onClick={handleContinueToTicketDetails}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 disabled={timeLeft <= 0}
               >
-                Continue to Checkout
+                Continue to Ticket Details
               </Button>
             </div>
           </CardContent>
