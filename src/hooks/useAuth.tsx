@@ -89,25 +89,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // First get user roles
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role_name')
+        .eq('user_id', userId);
 
-      if (error) {
-        console.error('Error fetching profile:', error);
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError);
         return;
       }
 
-      // Type-safe profile assignment with proper role casting
-      const profileData: Profile = {
-        id: data.id,
-        name: data.name,
-        email: data.email,
-        role: data.role as 'customer' | 'vendor' | 'admin',
-        approval_status: data.approval_status
-      };
+      const role = userRoles?.[0]?.role_name as 'customer' | 'vendor' | 'admin' || 'customer';
+
+      // Get profile data based on role
+      let profileData: any = null;
+      let approval_status = undefined;
+
+      if (role === 'vendor' || role === 'admin') {
+        // Get management profile for vendors/admins
+        const { data: mgmtProfile, error: mgmtError } = await supabase
+          .from('management_profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (!mgmtError && mgmtProfile) {
+          profileData = {
+            id: mgmtProfile.id,
+            name: mgmtProfile.business_name,
+            email: mgmtProfile.business_name, // Fallback since email not in management_profiles
+            role: role,
+            approval_status: mgmtProfile.approval_status
+          };
+        }
+      } else {
+        // Get customer profile
+        const { data: custProfile, error: custError } = await supabase
+          .from('customer_profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (!custError && custProfile) {
+          profileData = {
+            id: custProfile.id,
+            name: custProfile.full_name,
+            email: custProfile.email,
+            role: role
+          };
+        }
+      }
+
+      // Fallback if no profile found
+      if (!profileData) {
+        profileData = {
+          id: userId,
+          name: 'User',
+          email: 'user@example.com',
+          role: role,
+          approval_status: approval_status
+        };
+      }
 
       setProfile(profileData);
     } catch (error) {

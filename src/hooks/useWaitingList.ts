@@ -8,7 +8,7 @@ interface WaitingListEntry {
   id: string;
   user_id: string;
   event_id: string;
-  position: number;
+  position?: number; // Make position optional since it's not in current schema
   status: 'waiting' | 'offered' | 'purchased' | 'expired' | 'cancelled';
   offer_expires_at: string | null;
   created_at: string;
@@ -37,8 +37,21 @@ export const useWaitingList = (eventId?: string) => {
         return;
       }
 
-      // Type cast the data to match our interface
-      setWaitingListEntry(data as WaitingListEntry);
+      // Map database response to interface
+      if (data) {
+        const mappedEntry: WaitingListEntry = {
+          id: data.id,
+          user_id: data.user_id,
+          event_id: data.event_id,
+          status: data.status as WaitingListEntry['status'],
+          offer_expires_at: data.offer_expires_at ? new Date(data.offer_expires_at).toISOString() : null,
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
+        };
+        setWaitingListEntry(mappedEntry);
+      } else {
+        setWaitingListEntry(null);
+      }
     } catch (error) {
       console.error('Error in checkWaitingListStatus:', error);
     }
@@ -50,14 +63,12 @@ export const useWaitingList = (eventId?: string) => {
 
     setLoading(true);
     try {
-      // Let the database trigger handle position assignment
       const { data, error } = await supabase
         .from('waiting_list')
         .insert({
           user_id: user.id,
           event_id: eventId,
-          status: 'waiting',
-          position: 0 // This will be overridden by the trigger
+          status: 'waiting'
         })
         .select()
         .single();
@@ -71,8 +82,18 @@ export const useWaitingList = (eventId?: string) => {
         return false;
       }
 
-      // Type cast the data to match our interface
-      setWaitingListEntry(data as WaitingListEntry);
+      // Map database response to interface
+      const mappedEntry: WaitingListEntry = {
+        id: data.id,
+        user_id: data.user_id,
+        event_id: data.event_id,
+        status: data.status as WaitingListEntry['status'],
+        offer_expires_at: data.offer_expires_at ? new Date(data.offer_expires_at).toISOString() : null,
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
+      };
+      
+      setWaitingListEntry(mappedEntry);
       toast.success('Successfully joined the waiting list!');
       return true;
     } catch (error) {

@@ -33,8 +33,25 @@ export const useEvents = () => {
         throw error;
       }
 
-      console.log('Events fetched:', data?.length);
-      return data as Event[];
+      // Map database schema to Event interface
+      const mappedEvents: Event[] = data.map(event => ({
+        id: event.id,
+        title: event.name, // Map 'name' to 'title'
+        description: event.description,
+        date: new Date(event.event_date).toISOString(), // Map 'event_date' to 'date'
+        location: event.location,
+        price: Number(event.price),
+        image: event.image_storage_id, // Map 'image_storage_id' to 'image'
+        category: 'Event', // Default category since not in DB
+        attendees: null, // Not in current schema
+        rating: null, // Not in current schema
+        vendor_id: event.user_id, // Map 'user_id' to 'vendor_id'
+        created_at: event.created_at || '',
+        updated_at: event.updated_at || ''
+      }));
+
+      console.log('Events fetched:', mappedEvents.length);
+      return mappedEvents;
     },
   });
 };
@@ -54,7 +71,24 @@ export const useEvent = (id: string) => {
         throw error;
       }
 
-      return data as Event;
+      // Map database schema to Event interface
+      const mappedEvent: Event = {
+        id: data.id,
+        title: data.name,
+        description: data.description,
+        date: new Date(data.event_date).toISOString(),
+        location: data.location,
+        price: Number(data.price),
+        image: data.image_storage_id,
+        category: 'Event',
+        attendees: null,
+        rating: null,
+        vendor_id: data.user_id,
+        created_at: data.created_at || '',
+        updated_at: data.updated_at || ''
+      };
+
+      return mappedEvent;
     },
     enabled: !!id,
   });
