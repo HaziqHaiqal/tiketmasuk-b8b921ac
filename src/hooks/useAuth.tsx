@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Send welcome email for new signups
-          if (event === 'SIGNED_UP') {
+          // Send welcome email for new signups - fix the event comparison
+          if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
             setTimeout(() => {
               sendWelcomeEmail(session.user.email!);
             }, 1000);
@@ -104,7 +104,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Get profile data based on role
       let profileData: any = null;
-      let approval_status = undefined;
 
       if (role === 'vendor' || role === 'admin') {
         // Get management profile for vendors/admins
@@ -147,8 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           id: userId,
           name: 'User',
           email: 'user@example.com',
-          role: role,
-          approval_status: approval_status
+          role: role
         };
       }
 

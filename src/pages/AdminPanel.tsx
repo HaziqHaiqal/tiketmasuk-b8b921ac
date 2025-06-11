@@ -11,8 +11,7 @@ import Header from '@/components/Header';
 
 interface PendingVendor {
   id: string;
-  name: string;
-  email: string;
+  user_id: string;
   business_name: string;
   business_description: string;
   business_address: string;
@@ -36,14 +35,27 @@ const AdminPanel = () => {
   const fetchPendingVendors = async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('management_profiles')
         .select('*')
-        .eq('role', 'vendor')
         .eq('approval_status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPendingVendors(data || []);
+      
+      // Map the data to our interface
+      const mappedVendors: PendingVendor[] = (data || []).map(profile => ({
+        id: profile.id,
+        user_id: profile.user_id,
+        business_name: profile.business_name,
+        business_description: profile.business_description || '',
+        business_address: profile.business_address || '',
+        business_phone: profile.business_phone || '',
+        business_registration_number: profile.business_registration_number || '',
+        approval_status: profile.approval_status || 'pending',
+        created_at: profile.created_at || ''
+      }));
+      
+      setPendingVendors(mappedVendors);
     } catch (error) {
       console.error('Error fetching pending vendors:', error);
       toast.error('Failed to load pending vendors');
@@ -55,7 +67,7 @@ const AdminPanel = () => {
   const handleVendorApproval = async (vendorId: string, action: 'approved' | 'rejected') => {
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from('management_profiles')
         .update({ approval_status: action })
         .eq('id', vendorId);
 
@@ -115,10 +127,10 @@ const AdminPanel = () => {
                     <div key={vendor.id} className="border rounded-lg p-6 bg-white">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h3 className="text-lg font-semibold">{vendor.name}</h3>
+                          <h3 className="text-lg font-semibold">{vendor.business_name}</h3>
                           <div className="flex items-center text-gray-600 mt-1">
-                            <Mail className="w-4 h-4 mr-2" />
-                            {vendor.email}
+                            <Building className="w-4 h-4 mr-2" />
+                            Business Profile
                           </div>
                         </div>
                         <Badge variant="outline">
@@ -128,12 +140,6 @@ const AdminPanel = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div className="space-y-3">
-                          <div className="flex items-center">
-                            <Building className="w-4 h-4 mr-2 text-gray-500" />
-                            <span className="font-medium">Business Name:</span>
-                            <span className="ml-2">{vendor.business_name || 'Not provided'}</span>
-                          </div>
-                          
                           <div className="flex items-center">
                             <Phone className="w-4 h-4 mr-2 text-gray-500" />
                             <span className="font-medium">Phone:</span>
