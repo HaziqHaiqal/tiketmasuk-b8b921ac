@@ -113,6 +113,7 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
         totalAmount: totalPrice,
         customerEmail,
         customerPhone,
+        quantity: totalTickets, // Pass the total quantity
       });
       
       toast({

@@ -8,6 +8,7 @@ interface UseToyyibPayProps {
   totalAmount: number;
   customerEmail: string;
   customerPhone: string;
+  quantity?: number;
 }
 
 export const useToyyibPay = () => {
@@ -20,6 +21,7 @@ export const useToyyibPay = () => {
     totalAmount,
     customerEmail,
     customerPhone,
+    quantity = 1,
   }: UseToyyibPayProps) => {
     console.log('Starting payment creation process...');
     setLoading(true);
@@ -31,8 +33,16 @@ export const useToyyibPay = () => {
       
       // Ensure URLs are properly encoded and don't contain special characters
       const baseUrl = window.location.origin;
-      const returnUrl = `${baseUrl}/payment/success`;
-      const callbackUrl = `${baseUrl}/payment/success`; // Use same URL for both
+      const successParams = new URLSearchParams({
+        event_id: eventId,
+        quantity: quantity.toString(),
+        total_amount: totalAmount.toString(),
+        customer_email: customerEmail,
+        customer_phone: customerPhone
+      });
+      
+      const returnUrl = `${baseUrl}/payment/success?${successParams.toString()}`;
+      const callbackUrl = returnUrl; // Use same URL for both
       
       const billConfig = {
         billName: safeBillName, // Simple, safe name

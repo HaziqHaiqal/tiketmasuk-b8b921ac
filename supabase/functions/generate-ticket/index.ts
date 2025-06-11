@@ -18,6 +18,9 @@ interface TicketRequest {
   eventId: string;
   quantity: number;
   totalPrice: number;
+  customerEmail?: string;
+  customerPhone?: string;
+  billCode?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -27,7 +30,15 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     console.log('Generate ticket request received');
-    const { userId, eventId, quantity, totalPrice }: TicketRequest = await req.json();
+    const { 
+      userId, 
+      eventId, 
+      quantity, 
+      totalPrice, 
+      customerEmail, 
+      customerPhone, 
+      billCode 
+    }: TicketRequest = await req.json();
 
     // Get event details
     const { data: event, error: eventError } = await supabase
@@ -40,15 +51,25 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Event not found');
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    console.log('Event found:', event.name);
 
-    if (profileError || !profile) {
-      throw new Error('User profile not found');
+    // Handle guest users vs registered users
+    let userProfile = null;
+    const isGuest = userId.startsWith('guest-');
+    
+    if (!isGuest) {
+      // Get user profile for registered users
+      const { data: profile, error: profileError } = await supabase
+        .from('customer_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) {
+        console.log('No customer profile found, will use email as identifier');
+      } else {
+        userProfile = profile;
+      }
     }
 
     const tickets = [];
@@ -58,30 +79,51 @@ const handler = async (req: Request): Promise<Response> => {
       // Generate unique ticket number
       const { data: ticketNumber } = await supabase.rpc('generate_ticket_number');
       
-      // Create QR code data
+      console.log('Generated ticket number:', ticketNumber);
+      
+      // Create QR code data with all necessary information
       const qrData = JSON.stringify({
         ticketNumber,
         eventId,
-        userId,
         eventName: event.name,
-        userEmail: profile.email
+        customerEmail: customerEmail || userProfile?.email,
+        customerPhone: customerPhone || userProfile?.phone,
+        eventDate: event.event_date,
+        eventLocation: event.location,
+        billCode,
+        generatedAt: new Date().toISOString()
       });
 
       // Generate QR code
-      const qrCode = await QRCode.toDataURL(qrData);
+      const qrCode = await QRCode.toDataURL(qrData, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
 
       // Insert ticket into database
+      const ticketData = {
+        user_id: isGuest ? null : userId,
+        event_id: eventId,
+        ticket_number: ticketNumber,
+        qr_code: qrCode,
+        purchase_date: new Date().toISOString(),
+        status: 'active',
+        guest_email: isGuest || !userProfile ? customerEmail : null,
+        amount: totalPrice / quantity,
+        purchased_at: Date.now()
+      };
+
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .insert({
-          user_id: userId,
-          event_id: eventId,
-          ticket_number: ticketNumber,
-          qr_code: qrCode,
-          purchase_date: new Date().toISOString(),
-          status: 'active'
-        })
-        .select()
+        .insert(ticketData)
+        .select(`
+          *,
+          events!tickets_event_id_fkey(name, event_date, location, description)
+        `)
         .single();
 
       if (ticketError) {
@@ -89,14 +131,24 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('Failed to create ticket');
       }
 
-      tickets.push(ticket);
+      // Add user info to ticket response
+      const ticketWithUserInfo = {
+        ...ticket,
+        user: {
+          name: userProfile?.full_name || customerEmail || 'Guest',
+          email: customerEmail || userProfile?.email || '',
+          phone: customerPhone || userProfile?.phone || ''
+        }
+      };
+
+      tickets.push(ticketWithUserInfo);
     }
 
     // Record purchase
     const { error: purchaseError } = await supabase
       .from('purchases')
       .insert({
-        user_id: userId,
+        user_id: isGuest ? null : userId,
         item_type: 'event',
         item_id: eventId,
         quantity,
@@ -110,25 +162,32 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send ticket delivery email
-    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
-      },
-      body: JSON.stringify({
-        to: profile.email,
-        templateType: 'ticket_delivery',
-        variables: {
-          userName: profile.name,
-          eventName: event.name,
-          eventDate: new Date(event.event_date).toLocaleDateString(),
-          eventLocation: event.location,
-          ticketCount: quantity,
-          ticketNumbers: tickets.map(t => t.ticket_number).join(', ')
-        }
-      })
-    });
+    if (customerEmail) {
+      try {
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+          },
+          body: JSON.stringify({
+            to: customerEmail,
+            templateType: 'ticket_delivery',
+            variables: {
+              userName: userProfile?.full_name || customerEmail,
+              eventName: event.name,
+              eventDate: new Date(event.event_date).toLocaleDateString(),
+              eventLocation: event.location,
+              ticketCount: quantity,
+              ticketNumbers: tickets.map(t => t.ticket_number).join(', '),
+              billCode: billCode || 'N/A'
+            }
+          })
+        });
+      } catch (emailError) {
+        console.error('Error sending ticket delivery email:', emailError);
+      }
+    }
 
     console.log('Tickets generated successfully:', tickets.length);
 
