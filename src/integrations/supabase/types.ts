@@ -135,132 +135,12 @@ export type Database = {
         }
         Relationships: []
       }
-      event_faqs: {
-        Row: {
-          answer: string
-          created_at: string | null
-          display_order: number | null
-          event_id: string
-          id: string
-          question: string
-          updated_at: string | null
-        }
-        Insert: {
-          answer: string
-          created_at?: string | null
-          display_order?: number | null
-          event_id: string
-          id?: string
-          question: string
-          updated_at?: string | null
-        }
-        Update: {
-          answer?: string
-          created_at?: string | null
-          display_order?: number | null
-          event_id?: string
-          id?: string
-          question?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_faqs_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_images: {
-        Row: {
-          alt_text: string | null
-          created_at: string | null
-          display_order: number | null
-          event_id: string
-          id: string
-          image_url: string
-          is_featured: boolean | null
-        }
-        Insert: {
-          alt_text?: string | null
-          created_at?: string | null
-          display_order?: number | null
-          event_id: string
-          id?: string
-          image_url: string
-          is_featured?: boolean | null
-        }
-        Update: {
-          alt_text?: string | null
-          created_at?: string | null
-          display_order?: number | null
-          event_id?: string
-          id?: string
-          image_url?: string
-          is_featured?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_images_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_promotions: {
-        Row: {
-          created_at: string
-          event_id: string
-          expires_at: string
-          id: string
-          is_active: boolean
-          promoted_at: string
-          subscription_id: string
-        }
-        Insert: {
-          created_at?: string
-          event_id: string
-          expires_at: string
-          id?: string
-          is_active?: boolean
-          promoted_at?: string
-          subscription_id: string
-        }
-        Update: {
-          created_at?: string
-          event_id?: string
-          expires_at?: string
-          id?: string
-          is_active?: boolean
-          promoted_at?: string
-          subscription_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_promotions_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_promotions_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "vendor_subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       events: {
         Row: {
           created_at: string | null
           description: string
           event_date: number
+          faqs: Json | null
           id: string
           image_storage_id: string | null
           is_cancelled: boolean | null
@@ -275,6 +155,7 @@ export type Database = {
           created_at?: string | null
           description: string
           event_date: number
+          faqs?: Json | null
           id?: string
           image_storage_id?: string | null
           is_cancelled?: boolean | null
@@ -289,6 +170,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           event_date?: number
+          faqs?: Json | null
           id?: string
           image_storage_id?: string | null
           is_cancelled?: boolean | null
@@ -358,50 +240,6 @@ export type Database = {
         }
         Relationships: []
       }
-      product_variants: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_available: boolean | null
-          price_adjustment: number | null
-          product_id: string
-          sku: string | null
-          stock_quantity: number | null
-          updated_at: string | null
-          variant_combination: Json
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_available?: boolean | null
-          price_adjustment?: number | null
-          product_id: string
-          sku?: string | null
-          stock_quantity?: number | null
-          updated_at?: string | null
-          variant_combination: Json
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_available?: boolean | null
-          price_adjustment?: number | null
-          product_id?: string
-          sku?: string | null
-          stock_quantity?: number | null
-          updated_at?: string | null
-          variant_combination?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_variants_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
           category: string
@@ -417,6 +255,7 @@ export type Database = {
           reviews: number | null
           title: string
           updated_at: string
+          variants: Json | null
           vendor_id: string
         }
         Insert: {
@@ -433,6 +272,7 @@ export type Database = {
           reviews?: number | null
           title: string
           updated_at?: string
+          variants?: Json | null
           vendor_id: string
         }
         Update: {
@@ -449,6 +289,7 @@ export type Database = {
           reviews?: number | null
           title?: string
           updated_at?: string
+          variants?: Json | null
           vendor_id?: string
         }
         Relationships: []
@@ -474,89 +315,6 @@ export type Database = {
         }
         Relationships: []
       }
-      subscription_tiers: {
-        Row: {
-          created_at: string
-          features: Json
-          id: string
-          max_promoted_events: number | null
-          name: string
-          price: number
-          promotion_duration_days: number | null
-        }
-        Insert: {
-          created_at?: string
-          features?: Json
-          id?: string
-          max_promoted_events?: number | null
-          name: string
-          price: number
-          promotion_duration_days?: number | null
-        }
-        Update: {
-          created_at?: string
-          features?: Json
-          id?: string
-          max_promoted_events?: number | null
-          name?: string
-          price?: number
-          promotion_duration_days?: number | null
-        }
-        Relationships: []
-      }
-      ticket_tiers: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          event_id: string
-          id: string
-          is_active: boolean | null
-          name: string
-          price: number
-          sale_end_date: string | null
-          sale_start_date: string | null
-          tickets_sold: number | null
-          total_tickets: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          event_id: string
-          id?: string
-          is_active?: boolean | null
-          name: string
-          price: number
-          sale_end_date?: string | null
-          sale_start_date?: string | null
-          tickets_sold?: number | null
-          total_tickets?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          event_id?: string
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          price?: number
-          sale_end_date?: string | null
-          sale_start_date?: string | null
-          tickets_sold?: number | null
-          total_tickets?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_tiers_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -580,50 +338,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      vendor_subscriptions: {
-        Row: {
-          created_at: string
-          current_period_end: string
-          current_period_start: string
-          id: string
-          status: string
-          stripe_subscription_id: string | null
-          tier_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          current_period_end: string
-          current_period_start?: string
-          id?: string
-          status?: string
-          stripe_subscription_id?: string | null
-          tier_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          current_period_end?: string
-          current_period_start?: string
-          id?: string
-          status?: string
-          stripe_subscription_id?: string | null
-          tier_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vendor_subscriptions_tier_id_fkey"
-            columns: ["tier_id"]
-            isOneToOne: false
-            referencedRelation: "subscription_tiers"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       waiting_list: {
         Row: {
