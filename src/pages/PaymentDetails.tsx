@@ -133,7 +133,6 @@ const PaymentDetails = () => {
   const handlePayment = async () => {
     if (!validateForm()) return;
 
-    const ticketHolders = JSON.parse(localStorage.getItem('ticketHolders') || '[]');
     const ticketPrice = 89; // This should come from event data
     const totalAmount = reservation?.quantity ? reservation.quantity * ticketPrice : 0;
 
@@ -147,10 +146,7 @@ const PaymentDetails = () => {
         customerEmail: billingDetails.email,
         customerPhone: billingDetails.phone,
         customerAddress: billingDetails.address,
-        quantity: reservation?.quantity || 1,
-        ticketHolders,
-        billingDetails,
-        shippingDetails: sameAsBilling ? billingDetails : shippingDetails
+        quantity: reservation?.quantity || 1
       });
       
       toast({
@@ -164,6 +160,11 @@ const PaymentDetails = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSameAsBillingChange = (checked: boolean | "indeterminate") => {
+    if (checked === "indeterminate") return;
+    setSameAsBilling(checked);
   };
 
   if (!reservation) {
@@ -313,7 +314,7 @@ const PaymentDetails = () => {
                 <Checkbox
                   id="same-as-billing"
                   checked={sameAsBilling}
-                  onCheckedChange={setSameAsBilling}
+                  onCheckedChange={handleSameAsBillingChange}
                 />
                 <Label htmlFor="same-as-billing">Same as billing address</Label>
               </div>
