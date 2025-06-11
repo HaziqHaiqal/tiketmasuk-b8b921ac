@@ -1,4 +1,6 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 interface ToyyibPayConfig {
   billName: string;
   billDescription: string;
@@ -19,41 +21,40 @@ interface ToyyibPayResponse {
 }
 
 export const createToyyibPayBill = async (config: ToyyibPayConfig): Promise<ToyyibPayResponse> => {
-  const response = await fetch('/functions/v1/toyyibpay-create-bill', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify(config),
+  console.log('Calling ToyyibPay create bill function with config:', config);
+  
+  const { data, error } = await supabase.functions.invoke('toyyibpay-create-bill', {
+    body: config,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create ToyyibPay bill: ${errorText}`);
+  console.log('ToyyibPay function response:', { data, error });
+
+  if (error) {
+    console.error('ToyyibPay function error:', error);
+    throw new Error(`Failed to create ToyyibPay bill: ${error.message}`);
   }
 
-  const result = await response.json();
-  
-  if (!result.success) {
-    throw new Error(result.error || 'Failed to create payment');
+  if (!data || !data.success) {
+    console.error('ToyyibPay API error:', data);
+    throw new Error(data?.error || 'Failed to create payment');
   }
 
-  return result;
+  return data;
 };
 
 export const getBillStatus = async (billCode: string): Promise<any> => {
-  const response = await fetch(`/functions/v1/toyyibpay-bill-status/${billCode}`, {
-    headers: {
-      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-    },
-  });
+  console.log('Getting bill status for:', billCode);
   
-  if (!response.ok) {
+  const { data, error } = await supabase.functions.invoke('toyyibpay-bill-status', {
+    body: { billCode },
+  });
+
+  if (error) {
+    console.error('Bill status error:', error);
     throw new Error('Failed to get bill status');
   }
 
-  return response.json();
+  return data;
 };
 
 export const generateBillExternalReference = (): string => {

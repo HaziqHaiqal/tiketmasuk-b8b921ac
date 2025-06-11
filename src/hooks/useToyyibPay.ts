@@ -21,6 +21,7 @@ export const useToyyibPay = () => {
     customerEmail,
     customerPhone,
   }: UseToyyibPayProps) => {
+    console.log('Starting payment creation process...');
     setLoading(true);
     setError(null);
 
@@ -42,10 +43,15 @@ export const useToyyibPay = () => {
 
       const response = await createToyyibPayBill(billConfig);
       
-      console.log('ToyyibPay response:', response);
+      console.log('ToyyibPay response received:', response);
       
-      // Redirect to ToyyibPay payment page
-      window.location.href = response.billpaymentUrl;
+      if (response.billpaymentUrl) {
+        console.log('Redirecting to payment URL:', response.billpaymentUrl);
+        // Redirect to ToyyibPay payment page
+        window.location.href = response.billpaymentUrl;
+      } else {
+        throw new Error('No payment URL received from ToyyibPay');
+      }
       
       return response;
     } catch (err) {
