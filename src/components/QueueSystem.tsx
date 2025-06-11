@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, Users, X } from 'lucide-react';
+import { Ticket, X } from 'lucide-react';
 import { useWaitingList } from '@/hooks/useWaitingList';
 
 interface QueueSystemProps {
@@ -14,53 +13,55 @@ interface QueueSystemProps {
 
 const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave }) => {
   const { waitingListEntry, leaveWaitingList } = useWaitingList(eventId);
-  const [estimatedWait, setEstimatedWait] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (waitingListEntry) {
-      // Calculate estimated wait (3 minutes per person ahead)
-      const waitTime = Math.max(0, (waitingListEntry.position - 1) * 3 * 60);
-      setEstimatedWait(waitTime);
+    if (waitingListEntry?.offer_expires_at) {
+      const calculateTimeLeft = () => {
+        const expiryTime = new Date(waitingListEntry.offer_expires_at!).getTime();
+        const now = new Date().getTime();
+        const difference = expiryTime - now;
+        
+        if (difference > 0) {
+          setTimeLeft(Math.floor(difference / 1000)); // Convert to seconds
+        } else {
+          setTimeLeft(0);
+        }
+      };
+
+      calculateTimeLeft();
+      const timer = setInterval(calculateTimeLeft, 1000);
+
+      return () => clearInterval(timer);
     }
-  }, [waitingListEntry]);
-
-  useEffect(() => {
-    // Check if user has been offered tickets
-    if (waitingListEntry?.status === 'offered') {
-      onComplete();
-    }
-  }, [waitingListEntry?.status, onComplete]);
-
-  useEffect(() => {
-    // Update estimated wait time every 30 seconds
-    const interval = setInterval(() => {
-      setEstimatedWait(prev => Math.max(0, prev - 30));
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleLeaveQueue = async () => {
-    const success = await leaveWaitingList();
-    if (success) {
-      onLeave();
-    }
-  };
+  }, [waitingListEntry?.offer_expires_at]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes} minutes ${remainingSeconds} seconds`;
   };
 
-  const progress = waitingListEntry ? Math.max(0, 100 - (waitingListEntry.position / 10) * 100) : 0;
+  const handlePurchaseTicket = () => {
+    setIsRedirecting(true);
+    // Simulate redirect delay
+    setTimeout(() => {
+      onComplete();
+    }, 2000);
+  };
+
+  const handleReleaseTicket = async () => {
+    await leaveWaitingList();
+    onLeave();
+  };
 
   if (!waitingListEntry) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <p className="text-gray-600">Loading queue status...</p>
+            <p>No queue information available.</p>
           </CardContent>
         </Card>
       </div>
@@ -68,94 +69,114 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-between items-center mb-4">
-            <div className="w-16 h-16 bg-blue-600 rounded-full mx-auto flex items-center justify-center">
-              <Users className="w-8 h-8 text-white" />
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLeaveQueue}
-              className="text-gray-500 hover:text-red-600"
-            >
-              <X className="w-4 h-4" />
-            </Button>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-2xl">
+        {/* Event Title */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">NBA Finals 2024 - Game 1</h1>
+          <div className="flex items-center justify-center text-gray-600 mb-2">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Madison Square Garden, New York
           </div>
-          <CardTitle className="text-2xl">You're in the Queue</CardTitle>
-          <p className="text-gray-600">Please wait while we process other customers</p>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Queue Position */}
-          <div className="text-center">
-            <div className="text-4xl font-bold text-blue-600 mb-2">
-              #{waitingListEntry.position}
-            </div>
-            <p className="text-gray-600">in queue</p>
+          <div className="flex items-center justify-center text-gray-600 mb-2">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            9/11/2025
           </div>
+          <div className="flex items-center justify-center text-gray-600 mb-4">
+            <Ticket className="w-5 h-5 mr-2" />
+            50 / 50 available <span className="text-orange-500 ml-1">(1 person trying to buy)</span>
+          </div>
+          <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg inline-block font-semibold">
+            RM 899.99
+          </div>
+        </div>
 
-          {/* Progress Bar */}
-          <div>
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-3" />
-          </div>
+        <p className="text-gray-700 text-center mb-8">
+          Witness the opening game of the NBA Finals!
+        </p>
 
-          {/* Estimated Wait Time */}
-          <div className="flex items-center justify-center space-x-2 text-gray-600">
-            <Clock className="w-4 h-4" />
-            <span>Estimated wait: {formatTime(estimatedWait)}</span>
-          </div>
+        {/* Queue Status Card */}
+        <Card className="border-2 border-yellow-200 bg-white shadow-lg">
+          <CardContent className="p-8">
+            {waitingListEntry.status === 'offered' && timeLeft !== null ? (
+              <>
+                {/* Ticket Reserved Section */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mr-4">
+                      <Ticket className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Ticket Reserved</h2>
+                      <p className="text-gray-600">
+                        Expires in {timeLeft > 0 ? formatTime(timeLeft) : 'expired'}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-gray-700">
+                    A ticket has been reserved for you. Complete your purchase before the timer expires to secure your spot at this event.
+                  </p>
+                </div>
 
-          {/* Status */}
-          <div className="text-center">
-            <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-              waitingListEntry.status === 'waiting' 
-                ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-green-100 text-green-800'
-            }`}>
-              {waitingListEntry.status === 'waiting' ? 'Waiting' : 'Processing'}
-            </div>
-          </div>
-
-          {/* Tips */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-900 mb-2">While you wait:</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Keep this tab open</li>
-              <li>• Don't refresh the page</li>
-              <li>• You'll be automatically notified when it's your turn</li>
-            </ul>
-          </div>
-
-          {/* Queue Stats */}
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-gray-900">
-                {Math.max(0, waitingListEntry.position - 1)}
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  {!isRedirecting ? (
+                    <Button 
+                      onClick={handlePurchaseTicket}
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 text-lg"
+                      disabled={timeLeft === 0}
+                    >
+                      Purchase Your Ticket Now →
+                    </Button>
+                  ) : (
+                    <Button 
+                      disabled
+                      className="w-full bg-gray-400 text-white font-semibold py-3 text-lg"
+                    >
+                      Redirecting to checkout...
+                    </Button>
+                  )}
+                  
+                  <Button 
+                    onClick={handleReleaseTicket}
+                    variant="outline"
+                    className="w-full border-red-300 text-red-600 hover:bg-red-50 font-semibold py-3"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Release Ticket Offer
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Ticket className="w-8 h-8 text-blue-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">You're in the Queue</h2>
+                <p className="text-gray-600 mb-6">
+                  Position #{waitingListEntry.position || 'Unknown'}
+                </p>
+                <p className="text-gray-700 mb-6">
+                  Please wait while we process other customers. You'll be notified when it's your turn to purchase tickets.
+                </p>
+                <Button 
+                  onClick={handleReleaseTicket}
+                  variant="outline"
+                  className="border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Leave Queue
+                </Button>
               </div>
-              <div className="text-xs text-gray-600">Ahead of you</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="text-2xl font-bold text-gray-900">~3</div>
-              <div className="text-xs text-gray-600">Min per person</div>
-            </div>
-          </div>
-
-          <Button 
-            variant="outline" 
-            onClick={handleLeaveQueue}
-            className="w-full"
-          >
-            Leave Queue
-          </Button>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

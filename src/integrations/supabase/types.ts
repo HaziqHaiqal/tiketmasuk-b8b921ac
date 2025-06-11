@@ -439,6 +439,7 @@ export type Database = {
           amount: number | null
           created_at: string | null
           event_id: string
+          guest_email: string | null
           id: string
           purchased_at: number
           status: string
@@ -448,6 +449,7 @@ export type Database = {
           amount?: number | null
           created_at?: string | null
           event_id: string
+          guest_email?: string | null
           id?: string
           purchased_at: number
           status?: string
@@ -457,6 +459,7 @@ export type Database = {
           amount?: number | null
           created_at?: string | null
           event_id?: string
+          guest_email?: string | null
           id?: string
           purchased_at?: number
           status?: string
