@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Users, Star, Clock, ArrowLeft } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
+import EventImageGallery from '@/components/EventImageGallery';
 import { useWaitingList } from '@/hooks/useWaitingList';
 
 const EventDetails = () => {
@@ -121,9 +122,9 @@ const EventDetails = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             {/* Hero Image */}
-            <div className="relative mb-6">
+            <div className="relative">
               <img
                 src={event.image}
                 alt={event.title}
@@ -140,7 +141,7 @@ const EventDetails = () => {
             </div>
 
             {/* Event Info */}
-            <Card className="mb-6">
+            <Card>
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -203,6 +204,9 @@ const EventDetails = () => {
                 <p className="text-gray-700">{event.fullDescription}</p>
               </CardContent>
             </Card>
+
+            {/* Event Image Gallery */}
+            <EventImageGallery eventId={id!} />
           </div>
 
           {/* Sidebar */}
