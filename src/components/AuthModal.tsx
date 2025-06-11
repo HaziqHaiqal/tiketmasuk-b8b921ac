@@ -69,7 +69,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
           data: {
             full_name: fullName,
             user_type: 'customer'
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
@@ -103,7 +104,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + window.location.pathname
+          redirectTo: `${window.location.origin}${window.location.pathname}`
         }
       });
 
@@ -114,6 +115,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           variant: "destructive",
         });
       }
+      // Don't call onAuthSuccess here - it will be handled by auth state change
     } catch (error) {
       toast({
         title: "Error",
@@ -131,7 +133,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: window.location.origin + window.location.pathname
+          redirectTo: `${window.location.origin}${window.location.pathname}`
         }
       });
 
@@ -142,6 +144,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           variant: "destructive",
         });
       }
+      // Don't call onAuthSuccess here - it will be handled by auth state change
     } catch (error) {
       toast({
         title: "Error",

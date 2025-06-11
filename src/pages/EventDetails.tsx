@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Calendar, MapPin, Users, Star, ArrowLeft, Package, HelpCircle } from 'lucide-react';
-import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
 import EventProductCard from '@/components/EventProductCard';
 import TicketSelectionCard from '@/components/TicketSelectionCard';
+import TicketReservationPage from '@/components/TicketReservationPage';
 import AuthModal from '@/components/AuthModal';
 import { useWaitingList } from '@/hooks/useWaitingList';
 import { useEvent } from '@/hooks/useEvents';
@@ -20,9 +20,10 @@ import { useToast } from '@/hooks/use-toast';
 
 const EventDetails = () => {
   const { id } = useParams();
-  const [showTicketSelection, setShowTicketSelection] = useState(false);
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
+  const [showReservationPage, setShowReservationPage] = useState(false);
   const { waitingListEntry, joinWaitingList, loading } = useWaitingList(id);
   const { reservation, createReservation } = useTicketReservation(id);
   const { user } = useAuth();
@@ -102,45 +103,46 @@ const EventDetails = () => {
     ]
   };
 
+  // Check if user has active reservation
+  useEffect(() => {
+    if (reservation && reservation.status === 'reserved') {
+      setShowReservationPage(true);
+    }
+  }, [reservation]);
+
   const handleBuyTickets = async (tickets: Record<string, number>) => {
     setSelectedTickets(tickets);
     
-    if (event.isHighDemand && event.ticketTypes.some(t => t.available < 100)) {
-      // Check if user is already in queue
-      if (waitingListEntry) {
-        // User is already in queue, show queue system
-        return;
+    // Show auth modal first
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = async () => {
+    setShowAuthModal(false);
+    
+    // Create reservation for the first selected ticket type
+    const firstTicketType = Object.keys(selectedTickets)[0];
+    const quantity = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
+    
+    if (firstTicketType && quantity > 0) {
+      const success = await createReservation(firstTicketType, quantity);
+      if (success) {
+        setShowReservationPage(true);
       }
-      
-      // Join the waiting list
-      const success = await joinWaitingList();
-      if (!success) {
-        // If joining failed, still allow direct purchase
-        setShowAuthModal(true);
-      }
-    } else {
-      setShowAuthModal(true);
     }
   };
 
-  const handleAuthSuccess = () => {
+  const handleGuestContinue = async () => {
     setShowAuthModal(false);
-    // Proceed to ticket selection with pre-filled quantities
-    setShowTicketSelection(true);
-  };
-
-  const handleGuestContinue = () => {
-    setShowAuthModal(false);
-    // Proceed to ticket selection as guest
-    setShowTicketSelection(true);
-  };
-
-  const handleQueueComplete = () => {
-    setShowTicketSelection(true);
-  };
-
-  const handleLeaveQueue = () => {
-    // User left the queue, go back to event details
+    
+    // For guest users, create reservation without user authentication
+    const firstTicketType = Object.keys(selectedTickets)[0];
+    const quantity = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
+    
+    if (firstTicketType && quantity > 0) {
+      // For guests, we might need different handling or just proceed to checkout
+      setShowReservationPage(true);
+    }
   };
 
   const handleAddToCart = (product: Product, variants: Record<string, string>, quantity: number) => {
@@ -175,29 +177,24 @@ const EventDetails = () => {
     );
   }
 
+  // Show reservation page if user has reserved tickets
+  if (showReservationPage && selectedTickets) {
+    return (
+      <TicketReservationPage
+        selectedTickets={selectedTickets}
+        ticketTypes={event.ticketTypes}
+        eventTitle={event.title}
+      />
+    );
+  }
+
   // Show queue system if user is in waiting list
   if (waitingListEntry && ['waiting', 'offered'].includes(waitingListEntry.status)) {
     return (
       <QueueSystem 
         eventId={id!} 
-        onComplete={handleQueueComplete}
-        onLeave={handleLeaveQueue}
-      />
-    );
-  }
-
-  if (showTicketSelection) {
-    return (
-      <TicketSelection 
-        event={{
-          ...event,
-          // Pre-populate selected tickets
-          ticketTypes: event.ticketTypes.map(type => ({
-            ...type,
-            preSelected: selectedTickets[type.id] || 0
-          }))
-        }} 
-        onBack={() => setShowTicketSelection(false)} 
+        onComplete={() => setShowReservationPage(true)}
+        onLeave={() => {}}
       />
     );
   }
