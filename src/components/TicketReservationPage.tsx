@@ -51,11 +51,11 @@ const TicketReservationPage: React.FC<TicketReservationPageProps> = ({
 
   // Countdown timer
   useEffect(() => {
-    if (reservation && reservation.expires_at) {
-      const expirationTime = new Date(reservation.expires_at).getTime();
+    if (reservation && reservation.offer_expires_at) {
+      const expirationTime = reservation.offer_expires_at;
       
       const timer = setInterval(() => {
-        const now = new Date().getTime();
+        const now = Date.now();
         const difference = expirationTime - now;
         
         if (difference > 0) {

@@ -46,11 +46,11 @@ const PaymentDetails = () => {
 
   // Countdown timer
   useEffect(() => {
-    if (reservation && reservation.expires_at) {
-      const expirationTime = new Date(reservation.expires_at).getTime();
+    if (reservation && reservation.offer_expires_at) {
+      const expirationTime = reservation.offer_expires_at;
       
       const timer = setInterval(() => {
-        const now = new Date().getTime();
+        const now = Date.now();
         const difference = expirationTime - now;
         
         if (difference > 0) {
@@ -134,7 +134,8 @@ const PaymentDetails = () => {
     if (!validateForm()) return;
 
     const ticketPrice = 89; // This should come from event data
-    const totalAmount = reservation?.quantity ? reservation.quantity * ticketPrice : 0;
+    const quantity = reservation?.quantity || 1;
+    const totalAmount = quantity * ticketPrice;
 
     try {
       await createPayment({
@@ -146,7 +147,7 @@ const PaymentDetails = () => {
         customerEmail: billingDetails.email,
         customerPhone: billingDetails.phone,
         customerAddress: billingDetails.address,
-        quantity: reservation?.quantity || 1
+        quantity: quantity
       });
       
       toast({

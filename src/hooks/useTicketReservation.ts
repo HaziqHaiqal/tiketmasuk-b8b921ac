@@ -10,8 +10,18 @@ interface WaitingListEntry {
   event_id: string;
   status: 'waiting' | 'offered' | 'purchased' | 'expired';
   offer_expires_at: number | null;
+  quantity?: number; // Add quantity field for UI compatibility
   created_at: string;
   updated_at: string;
+}
+
+interface JoinWaitingListResponse {
+  success: boolean;
+  status?: string;
+  error?: string;
+  waiting_list_id?: string;
+  user_id?: string;
+  offer_expires_at?: number;
 }
 
 export const useTicketReservation = (eventId?: string) => {
@@ -38,7 +48,9 @@ export const useTicketReservation = (eventId?: string) => {
       }
 
       if (data) {
-        setReservation(data as WaitingListEntry);
+        // Add default quantity for UI compatibility
+        const entryWithQuantity = { ...data, quantity: 1 } as WaitingListEntry;
+        setReservation(entryWithQuantity);
       }
     } catch (error) {
       console.error('Error in checkReservation:', error);
@@ -62,8 +74,10 @@ export const useTicketReservation = (eventId?: string) => {
         return false;
       }
 
-      if (data?.success) {
-        if (data.status === 'offered') {
+      const response = data as JoinWaitingListResponse;
+      
+      if (response?.success) {
+        if (response.status === 'offered') {
           toast.success('Ticket offered! You have 20 minutes to complete purchase.');
         } else {
           toast.success('Added to waiting list! You\'ll be notified when tickets become available.');
@@ -73,7 +87,7 @@ export const useTicketReservation = (eventId?: string) => {
         await checkReservation();
         return true;
       } else {
-        toast.error(data?.error || 'Failed to join waiting list');
+        toast.error(response?.error || 'Failed to join waiting list');
         return false;
       }
     } catch (error) {

@@ -26,8 +26,9 @@ const TicketDetails = () => {
 
   // Initialize ticket holders array based on reservation quantity
   useEffect(() => {
-    if (reservation && reservation.quantity > 0) {
-      const holders = Array.from({ length: reservation.quantity }, () => ({
+    const quantity = reservation?.quantity || 1;
+    if (quantity > 0) {
+      const holders = Array.from({ length: quantity }, () => ({
         holder_name: '',
         holder_email: '',
         holder_phone: '',
@@ -39,11 +40,11 @@ const TicketDetails = () => {
 
   // Countdown timer
   useEffect(() => {
-    if (reservation && reservation.expires_at) {
-      const expirationTime = new Date(reservation.expires_at).getTime();
+    if (reservation && reservation.offer_expires_at) {
+      const expirationTime = reservation.offer_expires_at;
       
       const timer = setInterval(() => {
-        const now = new Date().getTime();
+        const now = Date.now();
         const difference = expirationTime - now;
         
         if (difference > 0) {

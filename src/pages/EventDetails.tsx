@@ -105,7 +105,7 @@ const EventDetails = () => {
 
   // Check if user has active reservation
   useEffect(() => {
-    if (reservation && reservation.status === 'reserved') {
+    if (reservation && reservation.status === 'offered') {
       setShowReservationPage(true);
     }
   }, [reservation]);
