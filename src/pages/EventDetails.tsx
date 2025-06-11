@@ -4,19 +4,26 @@ import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Users, Star, Clock, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Users, Star, Clock, ArrowLeft, Package } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
+import EventProductCard from '@/components/EventProductCard';
 import { useWaitingList } from '@/hooks/useWaitingList';
 import { useEvent } from '@/hooks/useEvents';
+import { useProducts, Product } from '@/hooks/useProducts';
+import { useToast } from '@/hooks/use-toast';
 
 const EventDetails = () => {
   const { id } = useParams();
   const [showTicketSelection, setShowTicketSelection] = useState(false);
   const { waitingListEntry, joinWaitingList, loading } = useWaitingList(id);
+  const { toast } = useToast();
   
   // Fetch real event data
   const { data: eventData, isLoading: eventLoading, error } = useEvent(id || '');
+  
+  // Fetch products for this event
+  const { data: products, isLoading: productsLoading } = useProducts(id);
 
   // Mock event data with real ID - in a real app, this would come from the database
   const event = {
@@ -92,6 +99,14 @@ const EventDetails = () => {
 
   const handleLeaveQueue = () => {
     // User left the queue, go back to event details
+  };
+
+  const handleAddToCart = (product: Product, variants: Record<string, string>, quantity: number) => {
+    toast({
+      title: "Added to Cart",
+      description: `${product.title} has been added to your cart.`,
+    });
+    console.log('Added to cart:', { product, variants, quantity });
   };
 
   if (eventLoading) {
@@ -232,6 +247,44 @@ const EventDetails = () => {
                 <p className="text-gray-700">{event.fullDescription}</p>
               </CardContent>
             </Card>
+
+            {/* Event Products */}
+            {products && products.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Package className="w-5 h-5 mr-2" />
+                    Event Merchandise (Optional)
+                  </CardTitle>
+                  <p className="text-gray-600 text-sm">
+                    Enhance your event experience with optional merchandise and add-ons
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {productsLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="bg-gray-200 h-48 rounded-lg mb-4"></div>
+                          <div className="bg-gray-200 h-4 rounded mb-2"></div>
+                          <div className="bg-gray-200 h-4 rounded w-2/3"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {products.map((product) => (
+                        <EventProductCard
+                          key={product.id}
+                          product={product}
+                          onAddToCart={handleAddToCart}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -239,6 +292,9 @@ const EventDetails = () => {
             <Card className="sticky top-8">
               <CardHeader>
                 <CardTitle>Get Your Tickets</CardTitle>
+                <p className="text-sm text-gray-600">
+                  <span className="text-red-600 font-medium">*Required</span> - You must purchase at least one ticket to attend this event
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -292,6 +348,20 @@ const EventDetails = () => {
                       </div>
                       <p className="text-xs text-orange-700 mt-1">
                         You may be placed in a queue during checkout
+                      </p>
+                    </div>
+                  )}
+
+                  {products && products.length > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+                      <div className="flex items-center">
+                        <Package className="w-4 h-4 text-green-600 mr-2" />
+                        <span className="text-sm text-green-800 font-medium">
+                          Optional Add-ons Available
+                        </span>
+                      </div>
+                      <p className="text-xs text-green-700 mt-1">
+                        Check out the merchandise section below for event souvenirs and extras
                       </p>
                     </div>
                   )}

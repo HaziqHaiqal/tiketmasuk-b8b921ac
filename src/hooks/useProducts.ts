@@ -2,6 +2,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  variant_name: string;
+  variant_value: string;
+  price_adjustment: number;
+  stock_quantity: number;
+  is_available: boolean;
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -17,6 +27,7 @@ export interface Product {
   event_id: string | null;
   created_at: string;
   updated_at: string;
+  variants?: ProductVariant[];
 }
 
 export const useProducts = (eventId?: string) => {
@@ -27,7 +38,10 @@ export const useProducts = (eventId?: string) => {
       
       let query = supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          product_variants(*)
+        `)
         .order('created_at', { ascending: false });
       
       // If eventId is provided, filter by event
@@ -54,7 +68,10 @@ export const useProduct = (id: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          product_variants(*)
+        `)
         .eq('id', id)
         .single();
 
