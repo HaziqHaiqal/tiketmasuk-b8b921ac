@@ -26,8 +26,11 @@ export const useToyyibPay = () => {
     setError(null);
 
     try {
+      // Truncate event name to fit ToyyibPay's 30-character limit for billName
+      const truncatedEventName = eventName.length > 20 ? eventName.substring(0, 20) + '...' : eventName;
+      
       const billConfig = {
-        billName: `Ticket for ${eventName}`,
+        billName: `Ticket: ${truncatedEventName}`, // Keep under 30 chars
         billDescription: `Event ticket purchase for ${eventName}`,
         billAmount: Math.round(totalAmount * 100), // Convert to cents
         billReturnUrl: `${window.location.origin}/payment/success`,
@@ -40,6 +43,7 @@ export const useToyyibPay = () => {
       };
 
       console.log('Creating ToyyibPay bill with config:', billConfig);
+      console.log('Bill name length:', billConfig.billName.length);
 
       const response = await createToyyibPayBill(billConfig);
       
