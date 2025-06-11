@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, MapPin, Users, Star, Clock, ArrowLeft } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
-import EventImageGallery from '@/components/EventImageGallery';
 import { useWaitingList } from '@/hooks/useWaitingList';
 
 const EventDetails = () => {
@@ -206,7 +205,6 @@ const EventDetails = () => {
             </Card>
 
             {/* Event Image Gallery */}
-            <EventImageGallery eventId={id!} />
           </div>
 
           {/* Sidebar */}
