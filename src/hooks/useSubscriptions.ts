@@ -35,21 +35,14 @@ export interface EventPromotion {
   created_at: string;
 }
 
+// Since subscription tables were removed, return empty data for now
 export const useSubscriptionTiers = () => {
   return useQuery({
     queryKey: ['subscription-tiers'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subscription_tiers')
-        .select('*')
-        .order('price', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching subscription tiers:', error);
-        throw error;
-      }
-
-      return data as SubscriptionTier[];
+      // Return empty array since subscription_tiers table was removed
+      console.log('Subscription tiers table no longer exists');
+      return [] as SubscriptionTier[];
     },
   });
 };
@@ -58,22 +51,9 @@ export const useVendorSubscription = (userId: string) => {
   return useQuery({
     queryKey: ['vendor-subscription', userId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vendor_subscriptions')
-        .select(`
-          *,
-          tier:subscription_tiers(*)
-        `)
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching vendor subscription:', error);
-        throw error;
-      }
-
-      return data as VendorSubscription | null;
+      // Return null since vendor_subscriptions table was removed
+      console.log('Vendor subscriptions table no longer exists');
+      return null as VendorSubscription | null;
     },
     enabled: !!userId,
   });
@@ -83,11 +63,13 @@ export const usePromotedEvents = () => {
   return useQuery({
     queryKey: ['promoted-events'],
     queryFn: async () => {
+      // Since event_promotions table was removed, get promoted events from function
       const { data, error } = await supabase.rpc('get_promoted_events');
 
       if (error) {
         console.error('Error fetching promoted events:', error);
-        throw error;
+        // Return empty array if function doesn't exist
+        return [];
       }
 
       return data || [];
@@ -104,21 +86,9 @@ export const useCreateEventPromotion = () => {
       subscriptionId: string;
       durationDays: number;
     }) => {
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + durationDays);
-
-      const { data, error } = await supabase
-        .from('event_promotions')
-        .insert({
-          event_id: eventId,
-          subscription_id: subscriptionId,
-          expires_at: expiresAt.toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      // Since event_promotions table was removed, just return a placeholder
+      console.log('Event promotions functionality disabled - table was removed');
+      throw new Error('Event promotions functionality is currently disabled');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promoted-events'] });
