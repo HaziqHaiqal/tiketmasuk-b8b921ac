@@ -4,35 +4,32 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-interface TicketReservation {
+interface WaitingListEntry {
   id: string;
   user_id: string;
   event_id: string;
-  ticket_type_id: string;
-  quantity: number;
-  reserved_at: string;
-  expires_at: string;
-  status: 'reserved' | 'purchased' | 'expired';
+  status: 'waiting' | 'offered' | 'purchased' | 'expired';
+  offer_expires_at: number | null;
   created_at: string;
   updated_at: string;
 }
 
 export const useTicketReservation = (eventId?: string) => {
   const { user } = useAuth();
-  const [reservation, setReservation] = useState<TicketReservation | null>(null);
+  const [reservation, setReservation] = useState<WaitingListEntry | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Check if user has active reservation for this event
+  // Check if user has active entry in waiting list for this event
   const checkReservation = async () => {
     if (!user || !eventId) return;
 
     try {
       const { data, error } = await supabase
-        .from('ticket_reservations')
+        .from('waiting_list')
         .select('*')
         .eq('event_id', eventId)
         .eq('user_id', user.id)
-        .eq('status', 'reserved')
+        .in('status', ['waiting', 'offered'])
         .maybeSingle();
 
       if (error) {
@@ -40,59 +37,62 @@ export const useTicketReservation = (eventId?: string) => {
         return;
       }
 
-      // Type cast the data to ensure proper typing
       if (data) {
-        setReservation(data as TicketReservation);
+        setReservation(data as WaitingListEntry);
       }
     } catch (error) {
       console.error('Error in checkReservation:', error);
     }
   };
 
-  // Create ticket reservation
+  // Create waiting list entry (join queue or get immediate offer)
   const createReservation = async (ticketTypeId: string, quantity: number) => {
     if (!user || !eventId) return false;
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('ticket_reservations')
-        .insert({
-          user_id: user.id,
-          event_id: eventId,
-          ticket_type_id: ticketTypeId,
-          quantity: quantity,
-          status: 'reserved'
-        })
-        .select()
-        .single();
+      // Use the join_waiting_list function that handles immediate offers or queuing
+      const { data, error } = await supabase.rpc('join_waiting_list', {
+        event_uuid: eventId,
+        user_uuid: user.id
+      });
 
       if (error) {
-        toast.error('Failed to reserve tickets');
+        toast.error('Failed to join waiting list');
         return false;
       }
 
-      // Type cast the data to ensure proper typing
-      setReservation(data as TicketReservation);
-      toast.success(`Tickets reserved! You have 20 minutes to complete purchase.`);
-      return true;
+      if (data?.success) {
+        if (data.status === 'offered') {
+          toast.success('Ticket offered! You have 20 minutes to complete purchase.');
+        } else {
+          toast.success('Added to waiting list! You\'ll be notified when tickets become available.');
+        }
+        
+        // Refresh the reservation state
+        await checkReservation();
+        return true;
+      } else {
+        toast.error(data?.error || 'Failed to join waiting list');
+        return false;
+      }
     } catch (error) {
       console.error('Error creating reservation:', error);
-      toast.error('Failed to reserve tickets');
+      toast.error('Failed to join waiting list');
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Release reservation
+  // Release waiting list entry
   const releaseReservation = async () => {
     if (!reservation) return false;
 
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('ticket_reservations')
+        .from('waiting_list')
         .update({ status: 'expired' })
         .eq('id', reservation.id);
 
@@ -119,22 +119,22 @@ export const useTicketReservation = (eventId?: string) => {
     }
   }, [user, eventId]);
 
-  // Set up real-time subscription for reservation updates
+  // Set up real-time subscription for waiting list updates
   useEffect(() => {
     if (!eventId || !user) return;
 
     const subscription = supabase
-      .channel(`reservations_${eventId}`)
+      .channel(`waiting_list_${eventId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'ticket_reservations',
+          table: 'waiting_list',
           filter: `event_id=eq.${eventId}`
         },
         (payload) => {
-          console.log('Reservation update:', payload);
+          console.log('Waiting list update:', payload);
           checkReservation();
         }
       )
