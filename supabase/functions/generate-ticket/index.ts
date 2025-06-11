@@ -40,6 +40,13 @@ const handler = async (req: Request): Promise<Response> => {
       billCode 
     }: TicketRequest = await req.json();
 
+    console.log('Request data:', { userId, eventId, quantity, totalPrice, customerEmail, customerPhone, billCode });
+
+    // Validate required fields
+    if (!eventId || !customerEmail) {
+      throw new Error('Event ID and customer email are required');
+    }
+
     // Get event details
     const { data: event, error: eventError } = await supabase
       .from('events')
@@ -48,6 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (eventError || !event) {
+      console.error('Event error:', eventError);
       throw new Error('Event not found');
     }
 
@@ -117,6 +125,8 @@ const handler = async (req: Request): Promise<Response> => {
         purchased_at: Date.now()
       };
 
+      console.log('Inserting ticket with data:', ticketData);
+
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
         .insert(ticketData)
@@ -128,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (ticketError) {
         console.error('Error creating ticket:', ticketError);
-        throw new Error('Failed to create ticket');
+        throw new Error('Failed to create ticket: ' + ticketError.message);
       }
 
       // Add user info to ticket response
@@ -144,7 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
       tickets.push(ticketWithUserInfo);
     }
 
-    // Record purchase
+    // Record purchase in the purchases table for tracking
     const { error: purchaseError } = await supabase
       .from('purchases')
       .insert({
@@ -154,7 +164,11 @@ const handler = async (req: Request): Promise<Response> => {
         quantity,
         unit_price: totalPrice / quantity,
         total_price: totalPrice,
-        payment_status: 'completed'
+        payment_status: 'completed',
+        bill_code: billCode,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+        payment_method: 'toyyibpay'
       });
 
     if (purchaseError) {
@@ -184,6 +198,7 @@ const handler = async (req: Request): Promise<Response> => {
             }
           })
         });
+        console.log('Ticket delivery email sent');
       } catch (emailError) {
         console.error('Error sending ticket delivery email:', emailError);
       }

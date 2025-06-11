@@ -153,6 +153,62 @@ export type Database = {
           },
         ]
       }
+      event_purchases: {
+        Row: {
+          bill_code: string | null
+          created_at: string
+          customer_email: string | null
+          customer_phone: string | null
+          event_id: string
+          id: string
+          payment_method: string | null
+          payment_status: string | null
+          quantity: number
+          total_price: number
+          unit_price: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          bill_code?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
+          event_id: string
+          id?: string
+          payment_method?: string | null
+          payment_status?: string | null
+          quantity?: number
+          total_price: number
+          unit_price: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          bill_code?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
+          event_id?: string
+          id?: string
+          payment_method?: string | null
+          payment_status?: string | null
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_purchases_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string | null
@@ -346,10 +402,14 @@ export type Database = {
       }
       purchases: {
         Row: {
+          bill_code: string | null
           created_at: string
+          customer_email: string | null
+          customer_phone: string | null
           id: string
           item_id: string
           item_type: string
+          payment_method: string | null
           payment_status: string | null
           purchase_date: string
           quantity: number | null
@@ -358,10 +418,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bill_code?: string | null
           created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
           id?: string
           item_id: string
           item_type: string
+          payment_method?: string | null
           payment_status?: string | null
           purchase_date?: string
           quantity?: number | null
@@ -370,10 +434,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bill_code?: string | null
           created_at?: string
+          customer_email?: string | null
+          customer_phone?: string | null
           id?: string
           item_id?: string
           item_type?: string
+          payment_method?: string | null
           payment_status?: string | null
           purchase_date?: string
           quantity?: number | null
@@ -441,8 +509,11 @@ export type Database = {
           event_id: string
           guest_email: string | null
           id: string
+          purchase_date: string | null
           purchased_at: number
+          qr_code: string | null
           status: string
+          ticket_number: string | null
           user_id: string
         }
         Insert: {
@@ -451,8 +522,11 @@ export type Database = {
           event_id: string
           guest_email?: string | null
           id?: string
+          purchase_date?: string | null
           purchased_at: number
+          qr_code?: string | null
           status?: string
+          ticket_number?: string | null
           user_id: string
         }
         Update: {
@@ -461,8 +535,11 @@ export type Database = {
           event_id?: string
           guest_email?: string | null
           id?: string
+          purchase_date?: string | null
           purchased_at?: number
+          qr_code?: string | null
           status?: string
+          ticket_number?: string | null
           user_id?: string
         }
         Relationships: [

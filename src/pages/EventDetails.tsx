@@ -8,25 +8,29 @@ import { Calendar, MapPin, Users, Star, Clock, ArrowLeft } from 'lucide-react';
 import TicketSelection from '@/components/TicketSelection';
 import QueueSystem from '@/components/QueueSystem';
 import { useWaitingList } from '@/hooks/useWaitingList';
+import { useEvent } from '@/hooks/useEvents';
 
 const EventDetails = () => {
   const { id } = useParams();
   const [showTicketSelection, setShowTicketSelection] = useState(false);
   const { waitingListEntry, joinWaitingList, loading } = useWaitingList(id);
+  
+  // Fetch real event data
+  const { data: eventData, isLoading: eventLoading, error } = useEvent(id || '');
 
-  // Mock event data - in real app, fetch based on id
+  // Mock event data with real ID - in a real app, this would come from the database
   const event = {
-    id: '1',
-    title: 'Summer Music Festival 2024',
-    description: 'Join us for an unforgettable weekend of music featuring top artists from around the world. Experience live performances, food trucks, and an amazing atmosphere in the heart of Central Park.',
+    id: id || '1', // Use the actual ID from the URL
+    title: eventData?.title || 'Summer Music Festival 2024',
+    description: eventData?.description || 'Join us for an unforgettable weekend of music featuring top artists from around the world. Experience live performances, food trucks, and an amazing atmosphere in the heart of Central Park.',
     fullDescription: 'This three-day festival brings together the best artists from various genres including rock, pop, electronic, and indie music. With multiple stages, art installations, and local food vendors, this is more than just a concert - it\'s a cultural experience.',
-    date: '2024-07-15',
+    date: eventData?.date || '2024-07-15',
     endDate: '2024-07-17',
     time: '18:00',
-    location: 'Central Park, New York, NY',
+    location: eventData?.location || 'Central Park, New York, NY',
     venue: 'Great Lawn Amphitheater',
-    price: 89,
-    image: '/placeholder.svg',
+    price: eventData?.price || 89,
+    image: eventData?.image || '/placeholder.svg',
     category: 'Music',
     attendees: 1250,
     maxCapacity: 5000,
@@ -38,7 +42,7 @@ const EventDetails = () => {
       {
         id: 'general',
         name: 'General Admission',
-        price: 89,
+        price: eventData?.price || 89,
         description: 'Access to all stages and general areas',
         available: 1200,
         maxPerPerson: 4
@@ -89,6 +93,30 @@ const EventDetails = () => {
   const handleLeaveQueue = () => {
     // User left the queue, go back to event details
   };
+
+  if (eventLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading event details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading event details</p>
+          <Button asChild>
+            <Link to="/browse">Back to Events</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Show queue system if user is in waiting list
   if (waitingListEntry && ['waiting', 'offered'].includes(waitingListEntry.status)) {
@@ -204,8 +232,6 @@ const EventDetails = () => {
                 <p className="text-gray-700">{event.fullDescription}</p>
               </CardContent>
             </Card>
-
-            {/* Event Image Gallery */}
           </div>
 
           {/* Sidebar */}
@@ -217,7 +243,7 @@ const EventDetails = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-2xl font-bold text-blue-600">From ${event.price}</p>
+                    <p className="text-2xl font-bold text-blue-600">From RM{event.price}</p>
                     <p className="text-sm text-gray-600">per person</p>
                   </div>
                   
