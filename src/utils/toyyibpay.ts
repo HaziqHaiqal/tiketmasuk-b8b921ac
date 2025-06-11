@@ -1,5 +1,5 @@
+
 interface ToyyibPayConfig {
-  categoryCode: string;
   billName: string;
   billDescription: string;
   billAmount: number;
@@ -9,40 +9,45 @@ interface ToyyibPayConfig {
   billTo: string;
   billEmail: string;
   billPhone: string;
-  billSplitPayment?: number;
-  billSplitPaymentArgs?: string;
-  billPaymentChannel?: string;
-  billContentEmail?: string;
-  billChargeToCustomer?: number;
-  billExpiryDate?: string;
   billExpiryDays?: number;
 }
 
 interface ToyyibPayResponse {
   billCode: string;
   billpaymentUrl: string;
+  success: boolean;
 }
 
 export const createToyyibPayBill = async (config: ToyyibPayConfig): Promise<ToyyibPayResponse> => {
-  // This would be implemented as a Supabase Edge Function to keep API key secure
-  const response = await fetch('/api/toyyibpay/create-bill', {
+  const response = await fetch('/functions/v1/toyyibpay-create-bill', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
     },
     body: JSON.stringify(config),
   });
 
   if (!response.ok) {
-    throw new Error('Failed to create ToyyibPay bill');
+    const errorText = await response.text();
+    throw new Error(`Failed to create ToyyibPay bill: ${errorText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to create payment');
+  }
+
+  return result;
 };
 
 export const getBillStatus = async (billCode: string): Promise<any> => {
-  // This would also be implemented as a Supabase Edge Function
-  const response = await fetch(`/api/toyyibpay/bill-status/${billCode}`);
+  const response = await fetch(`/functions/v1/toyyibpay-bill-status/${billCode}`, {
+    headers: {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+  });
   
   if (!response.ok) {
     throw new Error('Failed to get bill status');

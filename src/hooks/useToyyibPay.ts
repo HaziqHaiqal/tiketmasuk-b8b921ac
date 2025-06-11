@@ -26,26 +26,30 @@ export const useToyyibPay = () => {
 
     try {
       const billConfig = {
-        categoryCode: process.env.TOYYIBPAY_CATEGORY_CODE || '',
         billName: `Ticket for ${eventName}`,
         billDescription: `Event ticket purchase for ${eventName}`,
-        billAmount: totalAmount * 100, // ToyyibPay expects amount in cents
+        billAmount: Math.round(totalAmount * 100), // Convert to cents
         billReturnUrl: `${window.location.origin}/payment/success`,
         billCallbackUrl: `${window.location.origin}/api/payment/callback`,
         billExternalReferenceNo: generateBillExternalReference(),
         billTo: 'Customer',
         billEmail: customerEmail,
         billPhone: customerPhone,
-        billExpiryDays: 1, // 1 day expiry
+        billExpiryDays: 1,
       };
 
+      console.log('Creating ToyyibPay bill with config:', billConfig);
+
       const response = await createToyyibPayBill(billConfig);
+      
+      console.log('ToyyibPay response:', response);
       
       // Redirect to ToyyibPay payment page
       window.location.href = response.billpaymentUrl;
       
       return response;
     } catch (err) {
+      console.error('Payment creation error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Payment creation failed';
       setError(errorMessage);
       throw err;
