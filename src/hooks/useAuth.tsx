@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -51,7 +52,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
+        
         if (session?.user) {
+          // Send welcome email for new signups
+          if (event === 'SIGNED_UP') {
+            setTimeout(() => {
+              sendWelcomeEmail(session.user.email!);
+            }, 1000);
+          }
           await fetchProfile(session.user.id);
         } else {
           setProfile(null);
@@ -62,6 +70,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const sendWelcomeEmail = async (email: string) => {
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          to: email,
+          templateType: 'welcome',
+          variables: {
+            userEmail: email
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+    }
+  };
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -132,7 +156,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name,
             role,
             ...additionalData
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 

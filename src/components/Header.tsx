@@ -10,7 +10,8 @@ import {
   Settings,
   BarChart3,
   X,
-  Clock
+  Clock,
+  QrCode
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -108,6 +109,12 @@ const Header = () => {
                         <Link to="/vendor/dashboard" className="flex items-center">
                           <BarChart3 className="w-4 h-4 mr-2" />
                           Vendor Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/vendor/qr-scanner" className="flex items-center">
+                          <QrCode className="w-4 h-4 mr-2" />
+                          QR Scanner
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -216,13 +223,22 @@ const Header = () => {
                   </div>
                 )}
                 {isApprovedVendor && (
-                  <Link 
-                    to="/vendor/dashboard" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Vendor Dashboard
-                  </Link>
+                  <>
+                    <Link 
+                      to="/vendor/dashboard" 
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Vendor Dashboard
+                    </Link>
+                    <Link 
+                      to="/vendor/qr-scanner" 
+                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      QR Scanner
+                    </Link>
+                  </>
                 )}
                 {isAdmin && (
                   <Link 

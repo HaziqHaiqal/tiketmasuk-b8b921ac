@@ -9,6 +9,75 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customer_profiles: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          preferences: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          preferences?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          preferences?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          created_at: string
+          html_content: string
+          id: string
+          subject: string
+          template_type: string
+          text_content: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          html_content: string
+          id?: string
+          subject: string
+          template_type: string
+          text_content?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          subject?: string
+          template_type?: string
+          text_content?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_bookings: {
         Row: {
           created_at: string
@@ -37,131 +106,109 @@ export type Database = {
           total_price?: number
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "event_bookings_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_bookings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       events: {
         Row: {
-          attendees: number | null
-          category: string
-          created_at: string
-          date: string
-          description: string | null
+          created_at: string | null
+          description: string
+          event_date: number
           id: string
-          image: string | null
+          image_storage_id: string | null
+          is_cancelled: boolean | null
           location: string
+          name: string
           price: number
-          rating: number | null
-          title: string
-          updated_at: string
-          vendor_id: string
+          total_tickets: number
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
-          attendees?: number | null
-          category: string
-          created_at?: string
-          date: string
-          description?: string | null
+          created_at?: string | null
+          description: string
+          event_date: number
           id?: string
-          image?: string | null
+          image_storage_id?: string | null
+          is_cancelled?: boolean | null
           location: string
+          name: string
           price: number
-          rating?: number | null
-          title: string
-          updated_at?: string
-          vendor_id: string
+          total_tickets: number
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
-          attendees?: number | null
-          category?: string
-          created_at?: string
-          date?: string
-          description?: string | null
+          created_at?: string | null
+          description?: string
+          event_date?: number
           id?: string
-          image?: string | null
+          image_storage_id?: string | null
+          is_cancelled?: boolean | null
           location?: string
+          name?: string
           price?: number
-          rating?: number | null
-          title?: string
-          updated_at?: string
-          vendor_id?: string
+          total_tickets?: number
+          updated_at?: string | null
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "events_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      organizers: {
+      management_profiles: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
           business_address: string | null
           business_description: string | null
           business_name: string
           business_phone: string | null
-          created_at: string
+          business_registration_number: string | null
+          created_at: string | null
           events_count: number | null
           id: string
           image: string | null
           location: string | null
           rating: number | null
-          updated_at: string
-          vendor_id: string
+          rejection_reason: string | null
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
           business_address?: string | null
           business_description?: string | null
           business_name: string
           business_phone?: string | null
-          created_at?: string
+          business_registration_number?: string | null
+          created_at?: string | null
           events_count?: number | null
           id?: string
           image?: string | null
           location?: string | null
           rating?: number | null
-          updated_at?: string
-          vendor_id: string
+          rejection_reason?: string | null
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
           business_address?: string | null
           business_description?: string | null
           business_name?: string
           business_phone?: string | null
-          created_at?: string
+          business_registration_number?: string | null
+          created_at?: string | null
           events_count?: number | null
           id?: string
           image?: string | null
           location?: string | null
           rating?: number | null
-          updated_at?: string
-          vendor_id?: string
+          rejection_reason?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "organizers_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       product_orders: {
         Row: {
@@ -197,13 +244,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_orders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -257,97 +297,156 @@ export type Database = {
           updated_at?: string
           vendor_id?: string
         }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          payment_status: string | null
+          purchase_date: string
+          quantity: number | null
+          total_price: number
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          payment_status?: string | null
+          purchase_date?: string
+          quantity?: number | null
+          total_price: number
+          unit_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          payment_status?: string | null
+          purchase_date?: string
+          quantity?: number | null
+          total_price?: number
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: number
+          permission: string
+          role_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          permission: string
+          role_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          permission?: string
+          role_name?: string
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          event_id: string
+          id: string
+          purchased_at: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          purchased_at: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          purchased_at?: number
+          status?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "products_event_id_fkey"
+            foreignKeyName: "tickets_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "products_vendor_id_fkey"
-            columns: ["vendor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
-      profiles: {
+      user_roles: {
         Row: {
-          approval_status: string | null
-          business_address: string | null
-          business_description: string | null
-          business_name: string | null
-          business_phone: string | null
-          business_registration_number: string | null
-          created_at: string
-          email: string
+          assigned_at: string | null
+          created_at: string | null
           id: string
-          name: string
-          role: string
-          updated_at: string
+          role_name: string
+          user_id: string
         }
         Insert: {
-          approval_status?: string | null
-          business_address?: string | null
-          business_description?: string | null
-          business_name?: string | null
-          business_phone?: string | null
-          business_registration_number?: string | null
-          created_at?: string
-          email: string
-          id: string
-          name: string
-          role?: string
-          updated_at?: string
+          assigned_at?: string | null
+          created_at?: string | null
+          id?: string
+          role_name: string
+          user_id: string
         }
         Update: {
-          approval_status?: string | null
-          business_address?: string | null
-          business_description?: string | null
-          business_name?: string | null
-          business_phone?: string | null
-          business_registration_number?: string | null
-          created_at?: string
-          email?: string
+          assigned_at?: string | null
+          created_at?: string | null
           id?: string
-          name?: string
-          role?: string
-          updated_at?: string
+          role_name?: string
+          user_id?: string
         }
         Relationships: []
       }
       waiting_list: {
         Row: {
-          created_at: string
+          created_at: string | null
           event_id: string
           id: string
-          offer_expires_at: string | null
-          position: number
+          offer_expires_at: number | null
           status: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           event_id: string
           id?: string
-          offer_expires_at?: string | null
-          position: number
+          offer_expires_at?: number | null
           status?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           event_id?: string
           id?: string
-          offer_expires_at?: string | null
-          position?: number
+          offer_expires_at?: number | null
           status?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -358,13 +457,6 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "waiting_list_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
@@ -372,7 +464,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_roles: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
+      is_admin: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      user_has_permission: {
+        Args: { permission_name: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

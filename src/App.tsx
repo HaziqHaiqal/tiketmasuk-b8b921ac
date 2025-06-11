@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,9 +11,12 @@ import Products from "./pages/Products";
 import EventDetails from "./pages/EventDetails";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import VendorDashboard from "./pages/VendorDashboard";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import CreateEvent from "./pages/CreateEvent";
+import QRScanner from "./pages/QRScanner";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./pages/AdminPanel";
 import Organizers from "./pages/Organizers";
@@ -41,8 +45,11 @@ const App = () => (
               <Route path="/event/:id" element={<EventDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/vendor/dashboard" element={<VendorDashboard />} />
               <Route path="/vendor/create-event" element={<CreateEvent />} />
+              <Route path="/vendor/qr-scanner" element={<QRScanner />} />
               <Route path="/customer/dashboard" element={<CustomerDashboard />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/organizers" element={<Organizers />} />
