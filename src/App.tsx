@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +19,7 @@ import QRScanner from "./pages/QRScanner";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./pages/AdminPanel";
 import Organizers from "./pages/Organizers";
+import PaymentSuccess from "./pages/PaymentSuccess";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +53,7 @@ const App = () => (
               <Route path="/customer/dashboard" element={<CustomerDashboard />} />
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/organizers" element={<Organizers />} />
+              <Route path="/payment/success" element={<PaymentSuccess />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

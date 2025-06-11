@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { useToyyibPay } from '@/hooks/useToyyibPay';
+import { useToast } from '@/hooks/use-toast';
 
 interface TicketType {
   id: string;
@@ -33,6 +34,10 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
   const [promoCode, setPromoCode] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const { createPayment, loading, error } = useToyyibPay();
+  const { toast } = useToast();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -79,10 +84,48 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
     return Object.values(selectedTickets).reduce((total, quantity) => total + quantity, 0);
   };
 
-  const handleCheckout = () => {
-    // Mock checkout process
-    console.log('Proceeding to checkout with:', selectedTickets);
-    alert('Checkout functionality would be implemented here with payment processing');
+  const handleCheckout = async () => {
+    const totalTickets = getTotalTickets();
+    const totalPrice = getTotalPrice();
+    
+    if (totalTickets === 0) {
+      toast({
+        title: "No tickets selected",
+        description: "Please select at least one ticket to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!customerEmail || !customerPhone) {
+      toast({
+        title: "Missing information",
+        description: "Please provide your email and phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await createPayment({
+        eventId: event.id,
+        eventName: event.title,
+        totalAmount: totalPrice,
+        customerEmail,
+        customerPhone,
+      });
+      
+      toast({
+        title: "Redirecting to payment",
+        description: "You will be redirected to ToyyibPay shortly.",
+      });
+    } catch (err) {
+      toast({
+        title: "Payment failed",
+        description: error || "Unable to process payment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -115,6 +158,34 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Customer Information */}
+                  <div className="border rounded-lg p-4 bg-blue-50">
+                    <h3 className="font-semibold mb-3">Customer Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Email *</label>
+                        <Input
+                          type="email"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          placeholder="your.email@example.com"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Phone Number *</label>
+                        <Input
+                          type="tel"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder="+60123456789"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ticket Types */}
                   {event.ticketTypes.map((ticket) => (
                     <div key={ticket.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
@@ -129,7 +200,7 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                             )}
                           </div>
                           <p className="text-sm text-gray-600 mt-1">{ticket.description}</p>
-                          <p className="text-lg font-bold text-blue-600 mt-2">${ticket.price}</p>
+                          <p className="text-lg font-bold text-blue-600 mt-2">RM{ticket.price}</p>
                         </div>
                         
                         {!ticket.soldOut && (
@@ -190,7 +261,7 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                           <p className="font-medium">{ticket.name}</p>
                           <p className="text-sm text-gray-600">Qty: {quantity}</p>
                         </div>
-                        <p className="font-medium">${ticket.price * quantity}</p>
+                        <p className="font-medium">RM{ticket.price * quantity}</p>
                       </div>
                     );
                   })}
@@ -214,7 +285,7 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                       <div className="border-t pt-4">
                         <div className="flex justify-between font-bold text-lg">
                           <span>Total</span>
-                          <span>${getTotalPrice()}</span>
+                          <span>RM{getTotalPrice()}</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           {getTotalTickets()} ticket{getTotalTickets() !== 1 ? 's' : ''}
@@ -225,9 +296,10 @@ const TicketSelection: React.FC<TicketSelectionProps> = ({ event, onBack }) => {
                         onClick={handleCheckout}
                         className="w-full bg-blue-600 hover:bg-blue-700"
                         size="lg"
+                        disabled={loading || !customerEmail || !customerPhone}
                       >
                         <ShoppingCart className="w-4 h-4 mr-2" />
-                        Proceed to Checkout
+                        {loading ? 'Processing...' : 'Proceed to Payment'}
                       </Button>
                     </>
                   )}
