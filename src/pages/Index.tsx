@@ -1,25 +1,25 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import EventCard from '@/components/EventCard';
-import EventCarousel from '@/components/EventCarousel';
+import PromotedEventsCarousel from '@/components/PromotedEventsCarousel';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Star, MapPin, Users } from 'lucide-react';
 import { useEvents } from '@/hooks/useEvents';
 import { useProducts } from '@/hooks/useProducts';
+import { usePromotedEvents } from '@/hooks/useSubscriptions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const { data: events, isLoading: eventsLoading } = useEvents();
   const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: promotedEvents, isLoading: promotedLoading } = usePromotedEvents();
 
-  // Get featured events for carousel (first 5)
-  const carouselEvents = events?.slice(0, 5) || [];
-  
-  // Get other featured events (next 3)
-  const featuredEvents = events?.slice(5, 8) || [];
+  // Get regular events for display (excluding promoted ones)
+  const regularEvents = events?.filter(event => 
+    !promotedEvents?.some(promoted => promoted.event_id === event.id)
+  ).slice(0, 6) || [];
   
   // Get featured products (first 3)
   const featuredProducts = products?.slice(0, 3) || [];
@@ -57,22 +57,22 @@ const Index = () => {
       <Header />
       <HeroSection />
       
-      {/* Event Banner Carousel */}
+      {/* Promoted Events Banner Carousel */}
       <section className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Events</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Promoted Events</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Discover amazing events happening near you
+              Discover premium events featured by our top vendors
             </p>
           </div>
           
-          <EventCarousel events={carouselEvents} loading={eventsLoading} />
+          <PromotedEventsCarousel events={promotedEvents || []} loading={promotedLoading} />
         </div>
       </section>
 
-      {/* More Featured Events Section */}
-      {featuredEvents.length > 0 && (
+      {/* Regular Events Section */}
+      {regularEvents.length > 0 && (
         <section className="py-16 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -83,7 +83,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredEvents.map((event) => (
+              {regularEvents.map((event) => (
                 <EventCard 
                   key={event.id} 
                   id={event.id}

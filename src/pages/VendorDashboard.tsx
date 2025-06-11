@@ -5,11 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, MapPin, Users, DollarSign, TrendingUp, Plus, Edit, Eye } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, TrendingUp, Plus, Edit, Eye, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useVendorSubscription } from '@/hooks/useSubscriptions';
+import SubscriptionPlans from '@/components/SubscriptionPlans';
 
 const VendorDashboard = () => {
   const { profile, logout } = useAuth();
+  const { data: subscription } = useVendorSubscription(profile?.id || '');
   const [activeTab, setActiveTab] = useState('overview');
 
   // Mock data for demonstration
@@ -29,7 +32,8 @@ const VendorDashboard = () => {
       ticketsSold: 45,
       totalTickets: 100,
       revenue: 675,
-      status: 'active'
+      status: 'active',
+      isPromoted: true
     },
     {
       id: '2',
@@ -39,7 +43,8 @@ const VendorDashboard = () => {
       ticketsSold: 89,
       totalTickets: 150,
       revenue: 445,
-      status: 'active'
+      status: 'active',
+      isPromoted: false
     },
     {
       id: '3',
@@ -49,7 +54,8 @@ const VendorDashboard = () => {
       ticketsSold: 22,
       totalTickets: 25,
       revenue: 130,
-      status: 'completed'
+      status: 'completed',
+      isPromoted: false
     }
   ];
 
@@ -59,6 +65,11 @@ const VendorDashboard = () => {
     { id: '3', event: 'Jazz Night', customer: 'Mike Johnson', amount: 45, date: '2024-06-01' }
   ];
 
+  const handleSelectPlan = (tierId: string) => {
+    console.log('Selected plan:', tierId);
+    // Implement Stripe checkout here
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -67,7 +78,15 @@ const VendorDashboard = () => {
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Vendor Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {profile?.name}!</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-gray-600">Welcome back, {profile?.name}!</p>
+                {subscription?.tier && (
+                  <Badge variant="secondary" className="flex items-center">
+                    <Crown className="w-3 h-3 mr-1" />
+                    {subscription.tier.name} Plan
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <Link to="/vendor/create-event">
@@ -86,9 +105,10 @@ const VendorDashboard = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
@@ -156,7 +176,14 @@ const VendorDashboard = () => {
                     {events.slice(0, 3).map((event) => (
                       <div key={event.id} className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">{event.title}</p>
+                          <div className="flex items-center space-x-2">
+                            <p className="font-medium">{event.title}</p>
+                            {event.isPromoted && (
+                              <Badge className="bg-yellow-500 text-black">
+                                ⭐ Promoted
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600">{new Date(event.date).toLocaleDateString()}</p>
                         </div>
                         <Badge variant={event.status === 'active' ? 'default' : 'secondary'}>
@@ -192,6 +219,21 @@ const VendorDashboard = () => {
             </div>
           </TabsContent>
 
+          <TabsContent value="subscription" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Subscription Management</CardTitle>
+                <p className="text-gray-600">Upgrade your plan to promote more events and get additional features</p>
+              </CardHeader>
+              <CardContent>
+                <SubscriptionPlans 
+                  currentTier={subscription?.tier_id} 
+                  onSelectPlan={handleSelectPlan}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="events" className="space-y-6">
             <Card>
               <CardHeader>
@@ -203,7 +245,14 @@ const VendorDashboard = () => {
                     <div key={event.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h3 className="font-semibold text-lg">{event.title}</h3>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-semibold text-lg">{event.title}</h3>
+                            {event.isPromoted && (
+                              <Badge className="bg-yellow-500 text-black">
+                                ⭐ Promoted
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center text-sm text-gray-600 mt-1">
                             <Calendar className="w-4 h-4 mr-1" />
                             {new Date(event.date).toLocaleDateString()}
@@ -240,6 +289,12 @@ const VendorDashboard = () => {
                           <Edit className="w-4 h-4 mr-2" />
                           Edit
                         </Button>
+                        {!event.isPromoted && subscription?.tier?.max_promoted_events && (
+                          <Button size="sm" className="bg-yellow-500 hover:bg-yellow-600 text-black">
+                            <Crown className="w-4 h-4 mr-2" />
+                            Promote
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

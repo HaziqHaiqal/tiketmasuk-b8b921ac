@@ -108,6 +108,51 @@ export type Database = {
         }
         Relationships: []
       }
+      event_promotions: {
+        Row: {
+          created_at: string
+          event_id: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          promoted_at: string
+          subscription_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          promoted_at?: string
+          subscription_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          promoted_at?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_promotions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_promotions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string | null
@@ -359,6 +404,36 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_tiers: {
+        Row: {
+          created_at: string
+          features: Json
+          id: string
+          max_promoted_events: number | null
+          name: string
+          price: number
+          promotion_duration_days: number | null
+        }
+        Insert: {
+          created_at?: string
+          features?: Json
+          id?: string
+          max_promoted_events?: number | null
+          name: string
+          price: number
+          promotion_duration_days?: number | null
+        }
+        Update: {
+          created_at?: string
+          features?: Json
+          id?: string
+          max_promoted_events?: number | null
+          name?: string
+          price?: number
+          promotion_duration_days?: number | null
+        }
+        Relationships: []
+      }
       tickets: {
         Row: {
           amount: number | null
@@ -421,6 +496,50 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          status: string
+          stripe_subscription_id: string | null
+          tier_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end: string
+          current_period_start?: string
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          tier_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          tier_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       waiting_list: {
         Row: {
           created_at: string | null
@@ -467,6 +586,19 @@ export type Database = {
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_promoted_events: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          event_id: string
+          event_name: string
+          event_description: string
+          event_date: number
+          event_location: string
+          event_price: number
+          event_image: string
+          promotion_expires_at: string
+        }[]
       }
       get_user_roles: {
         Args: Record<PropertyKey, never>
