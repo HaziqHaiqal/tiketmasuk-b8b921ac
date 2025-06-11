@@ -4,7 +4,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Download, Calendar, MapPin, Mail, Phone, User } from 'lucide-react';
+import { CheckCircle, Download, Calendar, MapPin, Mail, Phone, User, Package, Ticket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,7 +24,7 @@ const PaymentSuccess = () => {
   const customerAddress = searchParams.get('customer_address') || '';
 
   useEffect(() => {
-    const recordBookingAndGenerateTickets = async () => {
+    const recordBooking = async () => {
       if (!eventId) {
         toast({
           title: "Error",
@@ -40,9 +40,6 @@ const PaymentSuccess = () => {
         // Get current user ID (could be null for guest users)
         const { data: { user } } = await supabase.auth.getUser();
         const userId = user?.id || null;
-
-        // Generate a unique user ID for guests
-        const guestUserId = userId || `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         // First, get event details
         const { data: event, error: eventError } = await supabase
@@ -75,7 +72,8 @@ const PaymentSuccess = () => {
             event_date: event.event_date,
             event_location: event.location,
             quantity: quantity,
-            unit_price: event.price
+            unit_price: event.price,
+            ticket_type: 'General Admission'
           },
           completed_at: new Date().toISOString()
         };
@@ -96,34 +94,44 @@ const PaymentSuccess = () => {
         console.log('Booking created:', bookingResult);
         setBooking(bookingResult);
 
-        // Generate tickets via edge function
-        console.log('Calling generate-ticket function...');
-        const { data: ticketData, error: ticketError } = await supabase.functions.invoke('generate-ticket', {
-          body: {
-            userId: guestUserId,
-            eventId: eventId,
-            quantity: quantity,
-            totalPrice: totalAmount,
-            customerEmail: customerEmail,
-            customerPhone: customerPhone,
-            customerFirstName: customerFirstName,
-            customerLastName: customerLastName,
-            bookingId: bookingResult.id
-          }
-        });
-
-        if (ticketError) {
-          console.error('Ticket generation error:', ticketError);
-          toast({
-            title: "Ticket Generation Failed",
-            description: ticketError.message || "Edge Function returned a non-2xx status code",
-            variant: "destructive",
+        // Send confirmation email using Supabase's built-in email
+        try {
+          console.log('Sending confirmation email...');
+          const { error: emailError } = await supabase.functions.invoke('send-email', {
+            body: {
+              to: customerEmail,
+              templateType: 'purchase_confirmation',
+              variables: {
+                customer_name: `${customerFirstName} ${customerLastName}`,
+                booking_id: bookingResult.id,
+                event_name: event.name,
+                event_date: new Date(event.event_date * 1000).toLocaleDateString(),
+                event_location: event.location,
+                quantity: quantity,
+                total_amount: totalAmount
+              }
+            }
           });
-        } else {
-          console.log('Tickets generated successfully:', ticketData);
+
+          if (emailError) {
+            console.error('Email sending error:', emailError);
+            // Don't fail the whole process if email fails
+            toast({
+              title: "Booking Confirmed",
+              description: "Your booking was successful, but we couldn't send the confirmation email.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Payment Successful!",
+              description: "Your booking has been confirmed and a confirmation email has been sent.",
+            });
+          }
+        } catch (emailErr) {
+          console.error('Email function error:', emailErr);
           toast({
-            title: "Payment Successful!",
-            description: "Your tickets have been generated and sent to your email.",
+            title: "Booking Confirmed", 
+            description: "Your booking was successful, but we couldn't send the confirmation email.",
           });
         }
 
@@ -139,7 +147,7 @@ const PaymentSuccess = () => {
       }
     };
 
-    recordBookingAndGenerateTickets();
+    recordBooking();
   }, [eventId, quantity, totalAmount, customerEmail, customerPhone, customerFirstName, customerLastName, customerAddress, toast, searchParams]);
 
   const downloadTicket = () => {
@@ -160,6 +168,96 @@ const PaymentSuccess = () => {
       </div>
     );
   }
+
+  const renderBookingDetails = () => {
+    if (!booking?.booking_details) return null;
+
+    const details = booking.booking_details;
+
+    if (booking.booking_type === 'event') {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center">
+            <Ticket className="w-5 h-5 mr-2 text-blue-600" />
+            <div>
+              <label className="text-sm font-medium text-gray-500">Event Ticket</label>
+              <p className="font-semibold">{details.event_name}</p>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Date & Time</label>
+            <p>{new Date(details.event_date * 1000).toLocaleDateString()} at {new Date(details.event_date * 1000).toLocaleTimeString()}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Location</label>
+            <p>{details.event_location}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Ticket Type</label>
+            <p>{details.ticket_type || 'General Admission'}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Quantity</label>
+            <p>{details.quantity} ticket{details.quantity > 1 ? 's' : ''}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Unit Price</label>
+            <p>RM{details.unit_price} per ticket</p>
+          </div>
+        </div>
+      );
+    } else if (booking.booking_type === 'product') {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center">
+            <Package className="w-5 h-5 mr-2 text-green-600" />
+            <label className="text-sm font-medium text-gray-500">Products</label>
+          </div>
+          {details.items?.map((item: any, index: number) => (
+            <div key={index} className="border-l-2 border-gray-200 pl-4">
+              <p className="font-semibold">{item.product_name}</p>
+              <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+              <p className="text-sm text-gray-600">Unit Price: RM{item.unit_price}</p>
+              <p className="text-sm font-medium">Subtotal: RM{(item.quantity * item.unit_price).toFixed(2)}</p>
+            </div>
+          ))}
+        </div>
+      );
+    } else if (booking.booking_type === 'mixed') {
+      return (
+        <div className="space-y-4">
+          {details.event && (
+            <div>
+              <div className="flex items-center mb-2">
+                <Ticket className="w-5 h-5 mr-2 text-blue-600" />
+                <label className="text-sm font-medium text-gray-500">Event Ticket</label>
+              </div>
+              <div className="border-l-2 border-blue-200 pl-4">
+                <p className="font-semibold">{details.event.event_name}</p>
+                <p className="text-sm text-gray-600">Quantity: {details.event.quantity}</p>
+                <p className="text-sm text-gray-600">Unit Price: RM{details.event.unit_price}</p>
+              </div>
+            </div>
+          )}
+          {details.products && details.products.length > 0 && (
+            <div>
+              <div className="flex items-center mb-2">
+                <Package className="w-5 h-5 mr-2 text-green-600" />
+                <label className="text-sm font-medium text-gray-500">Products</label>
+              </div>
+              {details.products.map((item: any, index: number) => (
+                <div key={index} className="border-l-2 border-green-200 pl-4 mb-2">
+                  <p className="font-semibold">{item.product_name}</p>
+                  <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                  <p className="text-sm text-gray-600">Unit Price: RM{item.unit_price}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -208,35 +306,16 @@ const PaymentSuccess = () => {
               </CardContent>
             </Card>
 
-            {/* Event Details */}
+            {/* Purchase Details */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <MapPin className="w-5 h-5 mr-2" />
-                  Event Information
+                  Purchase Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Event Name</label>
-                  <p className="font-semibold">{booking.booking_details.event_name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Date & Time</label>
-                  <p>{new Date(booking.booking_details.event_date * 1000).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Location</label>
-                  <p>{booking.booking_details.event_location}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Quantity</label>
-                  <p>{booking.booking_details.quantity} ticket{booking.booking_details.quantity > 1 ? 's' : ''}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Unit Price</label>
-                  <p>RM{booking.booking_details.unit_price} per ticket</p>
-                </div>
+              <CardContent>
+                {renderBookingDetails()}
               </CardContent>
             </Card>
           </div>
@@ -284,7 +363,7 @@ const PaymentSuccess = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button onClick={downloadTicket} className="flex items-center">
             <Download className="w-4 h-4 mr-2" />
-            Download Ticket
+            Download Receipt
           </Button>
           <Button variant="outline" asChild>
             <Link to="/">Return to Home</Link>
@@ -296,8 +375,8 @@ const PaymentSuccess = () => {
           <CardContent className="pt-6">
             <h3 className="font-semibold text-blue-900 mb-2">Important Information</h3>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Please bring a printed copy or digital version of your ticket to the event</li>
-              <li>• Your QR code will be required for entry</li>
+              <li>• Please save this confirmation page for your records</li>
+              <li>• Your booking confirmation will be required for entry</li>
               <li>• Arrive at least 30 minutes before the event starts</li>
               <li>• A confirmation email has been sent to {customerEmail}</li>
             </ul>

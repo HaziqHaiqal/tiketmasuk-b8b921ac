@@ -435,66 +435,6 @@ export type Database = {
         }
         Relationships: []
       }
-      tickets: {
-        Row: {
-          amount: number | null
-          booking_id: string | null
-          created_at: string | null
-          event_id: string
-          guest_email: string | null
-          id: string
-          purchase_date: string | null
-          purchased_at: number
-          qr_code: string | null
-          status: string
-          ticket_number: string | null
-          user_id: string
-        }
-        Insert: {
-          amount?: number | null
-          booking_id?: string | null
-          created_at?: string | null
-          event_id: string
-          guest_email?: string | null
-          id?: string
-          purchase_date?: string | null
-          purchased_at: number
-          qr_code?: string | null
-          status?: string
-          ticket_number?: string | null
-          user_id: string
-        }
-        Update: {
-          amount?: number | null
-          booking_id?: string | null
-          created_at?: string | null
-          event_id?: string
-          guest_email?: string | null
-          id?: string
-          purchase_date?: string | null
-          purchased_at?: number
-          qr_code?: string | null
-          status?: string
-          ticket_number?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tickets_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_roles: {
         Row: {
           assigned_at: string | null

@@ -19,15 +19,23 @@ export interface Product {
   updated_at: string;
 }
 
-export const useProducts = () => {
+export const useProducts = (eventId?: string) => {
   return useQuery({
-    queryKey: ['products'],
+    queryKey: ['products', eventId],
     queryFn: async () => {
-      console.log('Fetching products from Supabase');
-      const { data, error } = await supabase
+      console.log('Fetching products from Supabase', eventId ? `for event ${eventId}` : '');
+      
+      let query = supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
+      
+      // If eventId is provided, filter by event
+      if (eventId) {
+        query = query.eq('event_id', eventId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching products:', error);
