@@ -26,39 +26,39 @@ export const useToyyibPay = () => {
     setError(null);
 
     try {
-      // Truncate event name to fit ToyyibPay's 30-character limit for billName
-      // "Ticket: " is 8 characters, so we have 22 characters left for the event name
-      const maxEventNameLength = 22;
-      const truncatedEventName = eventName.length > maxEventNameLength 
-        ? eventName.substring(0, maxEventNameLength - 3) + '...' 
-        : eventName;
+      // Create a simple, URL-safe bill name
+      const safeBillName = `Ticket-${eventId.slice(0, 8)}`;
+      
+      // Ensure URLs are properly encoded and don't contain special characters
+      const baseUrl = window.location.origin;
+      const returnUrl = `${baseUrl}/payment/success`;
+      const callbackUrl = `${baseUrl}/payment/success`; // Use same URL for both
       
       const billConfig = {
-        billName: `Ticket: ${truncatedEventName}`, // Will be max 30 chars
-        billDescription: `Event ticket purchase for ${eventName}`,
+        billName: safeBillName, // Simple, safe name
+        billDescription: `Event ticket for ${eventName.substring(0, 50)}`, // Limit description length
         billAmount: Math.round(totalAmount * 100), // Convert to cents
-        billReturnUrl: `${window.location.origin}/payment/success`,
-        billCallbackUrl: `${window.location.origin}/api/payment/callback`,
+        billReturnUrl: returnUrl,
+        billCallbackUrl: callbackUrl,
         billExternalReferenceNo: generateBillExternalReference(),
-        billTo: 'Customer',
+        billTo: customerEmail.substring(0, 30), // Limit length
         billEmail: customerEmail,
-        billPhone: customerPhone,
+        billPhone: customerPhone.replace(/[^\d+]/g, ''), // Remove non-numeric chars except +
         billExpiryDays: 1,
       };
 
       console.log('Creating ToyyibPay bill with config:', billConfig);
-      console.log('Bill name length:', billConfig.billName.length);
 
       const response = await createToyyibPayBill(billConfig);
       
       console.log('ToyyibPay response received:', response);
       
-      if (response.billpaymentUrl) {
+      if (response.billpaymentUrl && !response.billpaymentUrl.includes('[KEY-DID-NOT-EXIST')) {
         console.log('Redirecting to payment URL:', response.billpaymentUrl);
         // Redirect to ToyyibPay payment page
         window.location.href = response.billpaymentUrl;
       } else {
-        throw new Error('No payment URL received from ToyyibPay');
+        throw new Error('Invalid ToyyibPay configuration - please check API credentials');
       }
       
       return response;

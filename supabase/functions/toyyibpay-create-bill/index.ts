@@ -28,7 +28,6 @@ serve(async (req) => {
 
     console.log('Received bill creation request:', {
       billName,
-      billNameLength: billName?.length,
       billAmount,
       billEmail,
       billPhone
@@ -40,30 +39,41 @@ serve(async (req) => {
 
     if (!userSecretKey || !categoryCode) {
       console.error('Missing ToyyibPay credentials')
-      throw new Error('ToyyibPay credentials not configured')
+      return new Response(
+        JSON.stringify({
+          error: 'ToyyibPay credentials not configured. Please check TOYYIBPAY_USER_SECRET_KEY and TOYYIBPAY_CATEGORY_CODE in Supabase secrets.',
+          success: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
     }
 
-    // Validate bill name length (ToyyibPay limit is 30 characters)
-    if (billName && billName.length > 30) {
-      console.error('Bill name too long:', billName.length, 'characters')
-      throw new Error(`Bill name must be 30 characters or less. Current: ${billName.length}`)
+    // Validate and sanitize inputs
+    if (!billName || billName.length > 30) {
+      throw new Error(`Bill name must be 1-30 characters. Current: ${billName?.length || 0}`)
     }
 
+    // Clean phone number - remove all non-digits except leading +
+    const cleanPhone = billPhone.replace(/[^\d+]/g, '')
+    
     // Prepare form data for ToyyibPay API
     const formData = new FormData()
     formData.append('userSecretKey', userSecretKey)
     formData.append('categoryCode', categoryCode)
     formData.append('billName', billName)
-    formData.append('billDescription', billDescription)
+    formData.append('billDescription', billDescription || 'Event ticket purchase')
     formData.append('billPriceSetting', '1') // Fixed price
     formData.append('billPayorInfo', '1') // Require payor info
     formData.append('billAmount', billAmount.toString())
     formData.append('billReturnUrl', billReturnUrl)
     formData.append('billCallbackUrl', billCallbackUrl)
     formData.append('billExternalReferenceNo', billExternalReferenceNo)
-    formData.append('billTo', billTo)
+    formData.append('billTo', billTo || 'Customer')
     formData.append('billEmail', billEmail)
-    formData.append('billPhone', billPhone)
+    formData.append('billPhone', cleanPhone)
     formData.append('billSplitPayment', '0')
     formData.append('billSplitPaymentArgs', '')
     formData.append('billPaymentChannel', '0') // All available channels
@@ -72,7 +82,7 @@ serve(async (req) => {
     formData.append('billExpiryDate', '')
     formData.append('billExpiryDays', billExpiryDays?.toString() || '3')
 
-    console.log('Calling ToyyibPay API with validated data')
+    console.log('Calling ToyyibPay API...')
 
     // Call ToyyibPay API
     const response = await fetch('https://dev.toyyibpay.com/index.php/api/createBill', {
@@ -81,14 +91,22 @@ serve(async (req) => {
     })
 
     const responseText = await response.text()
-    console.log('ToyyibPay API response:', responseText)
+    console.log('ToyyibPay API raw response:', responseText)
     
-    // ToyyibPay returns different formats, try to parse as JSON first
+    // Check for common error responses
+    if (responseText.includes('disallowed characters')) {
+      throw new Error('Invalid characters in request data. Please check URLs and input fields.')
+    }
+    
+    if (responseText.includes('[KEY-DID-NOT-EXIST') || responseText.includes('USER-IS-NOT-ACTIVE')) {
+      throw new Error('Invalid ToyyibPay API credentials. Please verify TOYYIBPAY_USER_SECRET_KEY and TOYYIBPAY_CATEGORY_CODE.')
+    }
+    
+    // Try to parse response
     let result
     try {
       result = JSON.parse(responseText)
       
-      // Check if it's an error response
       if (result && result.status === 'error') {
         console.error('ToyyibPay API error:', result)
         throw new Error(`ToyyibPay API error: ${result.msg}`)
@@ -99,7 +117,7 @@ serve(async (req) => {
         result = [{ BillCode: responseText.trim() }]
       } else {
         console.error('Invalid response from ToyyibPay API:', responseText)
-        throw new Error('Invalid response from ToyyibPay API: ' + responseText)
+        throw new Error('Invalid response from ToyyibPay API. Please check your API credentials and configuration.')
       }
     }
 
