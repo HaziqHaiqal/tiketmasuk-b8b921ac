@@ -50,7 +50,7 @@ export const useToyyibPay = () => {
         customer_address: customerAddress
       });
       
-      const returnUrl = `${baseUrl}/payment/success?${successParams.toString()}`;
+      const returnUrl = `${baseUrl}/payment-status?${successParams.toString()}`;
       const callbackUrl = returnUrl; // Use same URL for both
       
       const billConfig = {

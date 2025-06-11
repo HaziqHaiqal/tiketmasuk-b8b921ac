@@ -140,7 +140,7 @@ export type Database = {
           created_at: string | null
           description: string
           event_date: number
-          faqs: Json | null
+          faq: Json | null
           id: string
           image_storage_id: string | null
           is_cancelled: boolean | null
@@ -155,7 +155,7 @@ export type Database = {
           created_at?: string | null
           description: string
           event_date: number
-          faqs?: Json | null
+          faq?: Json | null
           id?: string
           image_storage_id?: string | null
           is_cancelled?: boolean | null
@@ -170,7 +170,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           event_date?: number
-          faqs?: Json | null
+          faq?: Json | null
           id?: string
           image_storage_id?: string | null
           is_cancelled?: boolean | null
@@ -315,100 +315,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ticket_holders: {
-        Row: {
-          created_at: string
-          holder_email: string
-          holder_ic_passport: string | null
-          holder_name: string
-          holder_phone: string | null
-          id: string
-          reservation_id: string
-          ticket_number: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          holder_email: string
-          holder_ic_passport?: string | null
-          holder_name: string
-          holder_phone?: string | null
-          id?: string
-          reservation_id: string
-          ticket_number?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          holder_email?: string
-          holder_ic_passport?: string | null
-          holder_name?: string
-          holder_phone?: string | null
-          id?: string
-          reservation_id?: string
-          ticket_number?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_holders_reservation_id_fkey"
-            columns: ["reservation_id"]
-            isOneToOne: false
-            referencedRelation: "ticket_reservations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ticket_reservations: {
-        Row: {
-          created_at: string
-          event_id: string
-          expires_at: string
-          id: string
-          quantity: number
-          reserved_at: string
-          status: string
-          ticket_details: Json | null
-          ticket_type_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          event_id: string
-          expires_at?: string
-          id?: string
-          quantity?: number
-          reserved_at?: string
-          status?: string
-          ticket_details?: Json | null
-          ticket_type_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          event_id?: string
-          expires_at?: string
-          id?: string
-          quantity?: number
-          reserved_at?: string
-          status?: string
-          ticket_details?: Json | null
-          ticket_type_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_reservations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -439,7 +345,6 @@ export type Database = {
           event_id: string
           id: string
           offer_expires_at: number | null
-          position: number | null
           status: string
           updated_at: string | null
           user_id: string
@@ -449,8 +354,7 @@ export type Database = {
           event_id: string
           id?: string
           offer_expires_at?: number | null
-          position?: number | null
-          status?: string
+          status: string
           updated_at?: string | null
           user_id: string
         }
@@ -459,7 +363,6 @@ export type Database = {
           event_id?: string
           id?: string
           offer_expires_at?: number | null
-          position?: number | null
           status?: string
           updated_at?: string | null
           user_id?: string
@@ -483,9 +386,21 @@ export type Database = {
         Args: { reservation_uuid: string }
         Returns: boolean
       }
+      check_ticket_availability: {
+        Args: { event_uuid: string }
+        Returns: Json
+      }
+      cleanup_expired_offers: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       expire_ticket_reservations: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      expire_waiting_list_offers: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
@@ -504,12 +419,26 @@ export type Database = {
           promotion_expires_at: string
         }[]
       }
+      get_queue_position: {
+        Args: { event_uuid: string; user_uuid: string }
+        Returns: Json
+      }
       get_queue_stats: {
         Args: { event_uuid: string }
         Returns: {
           total_waiting: number
           current_position: number
           user_in_queue: boolean
+        }[]
+      }
+      get_user_queue_position: {
+        Args: { event_uuid: string; user_uuid: string }
+        Returns: {
+          entry_id: string
+          entry_status: string
+          queue_position: number
+          offer_expires_at: number
+          created_at: string
         }[]
       }
       get_user_roles: {
@@ -520,9 +449,25 @@ export type Database = {
         Args: { check_user_id?: string }
         Returns: boolean
       }
+      join_waiting_list: {
+        Args: { event_uuid: string; user_uuid?: string }
+        Returns: Json
+      }
+      process_queue: {
+        Args: { event_uuid: string }
+        Returns: Json
+      }
       process_ticket_queue: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+        Args: Record<PropertyKey, never> | { event_uuid?: string }
+        Returns: number
+      }
+      release_ticket: {
+        Args: { event_uuid: string; waiting_list_uuid: string }
+        Returns: Json
+      }
+      release_ticket_offer: {
+        Args: { event_uuid: string; waiting_list_uuid: string }
+        Returns: boolean
       }
       user_has_permission: {
         Args: { permission_name: string }

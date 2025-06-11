@@ -11,7 +11,7 @@ import AdminPanel from '@/pages/AdminPanel';
 import Products from '@/pages/Products';
 import Organizers from '@/pages/Organizers';
 import QRScanner from '@/pages/QRScanner';
-import PaymentSuccess from '@/pages/PaymentSuccess';
+import PaymentStatus from '@/pages/PaymentStatus';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import NotFound from '@/pages/NotFound';
@@ -63,8 +63,8 @@ export const navItems = [
     page: <QRScanner />,
   },
   {
-    to: "/payment-success",
-    page: <PaymentSuccess />,
+    to: "/payment-status",
+    page: <PaymentStatus />,
   },
   {
     to: "/forgot-password",

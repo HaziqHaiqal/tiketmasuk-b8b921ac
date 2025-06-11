@@ -1,20 +1,22 @@
-
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Download, Calendar, MapPin, Mail, Phone, User, Package, Ticket } from 'lucide-react';
+import { CheckCircle, XCircle, Download, Calendar, MapPin, Mail, Phone, User, Package, Ticket, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-const PaymentSuccess = () => {
+const PaymentStatus = () => {
   const [searchParams] = useSearchParams();
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | 'pending'>('pending');
   const { toast } = useToast();
 
   const eventId = searchParams.get('event_id');
+  const status = searchParams.get('status_id'); // ToyyibPay status: 1 = success, 2 = pending, 3 = failed
+  const billCode = searchParams.get('billcode');
   const quantity = parseInt(searchParams.get('quantity') || '1');
   const totalAmount = parseFloat(searchParams.get('total_amount') || '0');
   const customerFirstName = searchParams.get('customer_first_name') || '';
@@ -24,138 +26,154 @@ const PaymentSuccess = () => {
   const customerAddress = searchParams.get('customer_address') || '';
 
   useEffect(() => {
-    const recordBooking = async () => {
-      if (!eventId) {
-        toast({
-          title: "Error",
-          description: "Invalid payment information",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      try {
-        console.log('Recording booking...');
-        
-        // Get current user ID (could be null for guest users)
-        const { data: { user } } = await supabase.auth.getUser();
-        const userId = user?.id || null;
-
-        // First, get event details
-        const { data: event, error: eventError } = await supabase
-          .from('events')
-          .select('*')
-          .eq('id', eventId)
-          .single();
-
-        if (eventError) {
-          console.error('Event fetch error:', eventError);
-          throw new Error('Event not found');
-        }
-
-        // Create booking record
-        const bookingData = {
-          user_id: userId,
-          booking_type: 'event',
-          customer_first_name: customerFirstName,
-          customer_last_name: customerLastName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-          customer_address: customerAddress,
-          total_amount: totalAmount,
-          payment_status: 'completed',
-          payment_method: 'toyyibpay',
-          payment_reference: searchParams.get('billcode') || 'completed',
-          booking_details: {
-            event_id: eventId,
-            event_name: event.name,
-            event_date: event.event_date,
-            event_location: event.location,
-            quantity: quantity,
-            unit_price: event.price,
-            ticket_type: 'General Admission'
-          },
-          completed_at: new Date().toISOString()
-        };
-
-        console.log('Creating booking:', bookingData);
-
-        const { data: bookingResult, error: bookingError } = await supabase
-          .from('bookings')
-          .insert(bookingData)
-          .select()
-          .single();
-
-        if (bookingError) {
-          console.error('Booking creation error:', bookingError);
-          throw new Error('Failed to create booking record');
-        }
-
-        console.log('Booking created:', bookingResult);
-        setBooking(bookingResult);
-
-        // Send confirmation email using Supabase's built-in email
-        try {
-          console.log('Sending confirmation email...');
-          const { error: emailError } = await supabase.functions.invoke('send-email', {
-            body: {
-              to: customerEmail,
-              templateType: 'purchase_confirmation',
-              variables: {
-                customer_name: `${customerFirstName} ${customerLastName}`,
-                booking_id: bookingResult.id,
-                event_name: event.name,
-                event_date: new Date(event.event_date * 1000).toLocaleDateString(),
-                event_location: event.location,
-                quantity: quantity,
-                total_amount: totalAmount
-              }
-            }
-          });
-
-          if (emailError) {
-            console.error('Email sending error:', emailError);
-            // Don't fail the whole process if email fails
-            toast({
-              title: "Booking Confirmed",
-              description: "Your booking was successful, but we couldn't send the confirmation email.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Payment Successful!",
-              description: "Your booking has been confirmed and a confirmation email has been sent.",
-            });
-          }
-        } catch (emailErr) {
-          console.error('Email function error:', emailErr);
-          toast({
-            title: "Booking Confirmed", 
-            description: "Your booking was successful, but we couldn't send the confirmation email.",
-          });
-        }
-
-      } catch (error) {
-        console.error('Error in payment processing:', error);
-        toast({
-          title: "Processing Error",
-          description: error instanceof Error ? error.message : "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
+    const determinePaymentStatus = () => {
+      if (status === '1') return 'success';
+      if (status === '3') return 'failed';
+      return 'pending';
     };
 
-    recordBooking();
-  }, [eventId, quantity, totalAmount, customerEmail, customerPhone, customerFirstName, customerLastName, customerAddress, toast, searchParams]);
+    const paymentResult = determinePaymentStatus();
+    setPaymentStatus(paymentResult);
+
+    if (paymentResult === 'success') {
+      recordSuccessfulBooking();
+    } else {
+      setLoading(false);
+    }
+  }, [status, eventId, quantity, totalAmount, customerEmail, customerPhone, customerFirstName, customerLastName, customerAddress]);
+
+  const recordSuccessfulBooking = async () => {
+    if (!eventId) {
+      toast({
+        title: "Error",
+        description: "Invalid payment information",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('Recording successful booking...');
+      
+      // Get current user ID (could be null for guest users)
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
+
+      // First, get event details
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) {
+        console.error('Event fetch error:', eventError);
+        throw new Error('Event not found');
+      }
+
+      // Create booking record
+      const bookingData = {
+        user_id: userId,
+        booking_type: 'event',
+        customer_first_name: customerFirstName,
+        customer_last_name: customerLastName,
+        customer_email: customerEmail,
+        customer_phone: customerPhone,
+        customer_address: customerAddress,
+        total_amount: totalAmount,
+        payment_status: 'completed',
+        payment_method: 'toyyibpay',
+        payment_reference: billCode || 'completed',
+        booking_details: {
+          event_id: eventId,
+          event_name: event.name,
+          event_date: event.event_date,
+          event_location: event.location,
+          quantity: quantity,
+          unit_price: event.price,
+          ticket_type: 'General Admission'
+        },
+        completed_at: new Date().toISOString()
+      };
+
+      console.log('Creating booking:', bookingData);
+
+      const { data: bookingResult, error: bookingError } = await supabase
+        .from('bookings')
+        .insert(bookingData)
+        .select()
+        .single();
+
+      if (bookingError) {
+        console.error('Booking creation error:', bookingError);
+        throw new Error('Failed to create booking record');
+      }
+
+      console.log('Booking created:', bookingResult);
+      setBooking(bookingResult);
+
+      // Send confirmation email
+      try {
+        console.log('Sending confirmation email...');
+        const { error: emailError } = await supabase.functions.invoke('send-email', {
+          body: {
+            to: customerEmail,
+            templateType: 'purchase_confirmation',
+            variables: {
+              customer_name: `${customerFirstName} ${customerLastName}`,
+              booking_id: bookingResult.id,
+              event_name: event.name,
+              event_date: new Date(event.event_date * 1000).toLocaleDateString(),
+              event_location: event.location,
+              quantity: quantity,
+              total_amount: totalAmount
+            }
+          }
+        });
+
+        if (emailError) {
+          console.error('Email sending error:', emailError);
+          toast({
+            title: "Booking Confirmed",
+            description: "Your booking was successful, but we couldn't send the confirmation email.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Payment Successful!",
+            description: "Your booking has been confirmed and a confirmation email has been sent.",
+          });
+        }
+      } catch (emailErr) {
+        console.error('Email function error:', emailErr);
+        toast({
+          title: "Booking Confirmed", 
+          description: "Your booking was successful, but we couldn't send the confirmation email.",
+        });
+      }
+
+    } catch (error) {
+      console.error('Error in payment processing:', error);
+      toast({
+        title: "Processing Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const downloadTicket = () => {
-    // This would typically download a PDF ticket
     toast({
       title: "Download Started",
       description: "Your ticket is being downloaded...",
     });
+  };
+
+  const retryPayment = () => {
+    // Redirect back to payment page
+    window.location.href = `/event/${eventId}/payment`;
   };
 
   if (loading) {
@@ -169,6 +187,87 @@ const PaymentSuccess = () => {
     );
   }
 
+  // Failed Payment UI
+  if (paymentStatus === 'failed') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Failed</h1>
+            <p className="text-gray-600">Unfortunately, your payment could not be processed.</p>
+          </div>
+
+          <Card className="mb-8 bg-red-50 border-red-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                <h3 className="font-semibold text-red-900">Payment Details</h3>
+              </div>
+              <div className="space-y-2 text-sm text-red-800">
+                <p><strong>Bill Code:</strong> {billCode || 'N/A'}</p>
+                <p><strong>Amount:</strong> RM{totalAmount}</p>
+                <p><strong>Status:</strong> Failed</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={retryPayment} className="bg-blue-600 hover:bg-blue-700">
+              Try Again
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to={`/event/${eventId}`}>Back to Event</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/">Return to Home</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pending Payment UI
+  if (paymentStatus === 'pending') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Pending</h1>
+            <p className="text-gray-600">Your payment is being processed. Please wait...</p>
+          </div>
+
+          <Card className="mb-8 bg-yellow-50 border-yellow-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center mb-4">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
+                <h3 className="font-semibold text-yellow-900">Payment Status</h3>
+              </div>
+              <div className="space-y-2 text-sm text-yellow-800">
+                <p><strong>Bill Code:</strong> {billCode || 'N/A'}</p>
+                <p><strong>Amount:</strong> RM{totalAmount}</p>
+                <p><strong>Status:</strong> Pending</p>
+                <p>Please check back in a few minutes or contact support if the issue persists.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={() => window.location.reload()}>
+              Refresh Status
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/">Return to Home</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Success Payment UI (existing code)
   const renderBookingDetails = () => {
     if (!booking?.booking_details) return null;
 
@@ -387,4 +486,4 @@ const PaymentSuccess = () => {
   );
 };
 
-export default PaymentSuccess;
+export default PaymentStatus;
