@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +45,25 @@ const EventDetails = () => {
     reviews: 324,
     vendor: 'EventPro LLC',
     isHighDemand: true,
-    faqs: eventData?.faqs || [],
+    // Mock FAQs data - in real app this would come from eventData
+    faqs: [
+      {
+        question: "What time does the event start?",
+        answer: "The event starts at 6:00 PM. Gates open at 5:00 PM."
+      },
+      {
+        question: "Is parking available?",
+        answer: "Yes, parking is available on-site for $15. We recommend arriving early as spaces are limited."
+      },
+      {
+        question: "Can I bring my own food and drinks?",
+        answer: "Outside food and beverages are not permitted. We have a variety of food vendors on-site."
+      },
+      {
+        question: "What should I bring?",
+        answer: "Bring a valid ID, your ticket (digital or printed), and comfortable shoes. Blankets and low-back chairs are welcome."
+      }
+    ],
     ticketTypes: [
       {
         id: 'general',

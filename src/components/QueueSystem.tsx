@@ -98,7 +98,7 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
           <CardContent className="p-6">
             <div className="text-center">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                {eventData?.name || 'NBA Finals 2024 - Game 1'}
+                {eventData?.title || 'NBA Finals 2024 - Game 1'}
               </h1>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
@@ -108,7 +108,7 @@ const QueueSystem: React.FC<QueueSystemProps> = ({ eventId, onComplete, onLeave 
                 </div>
                 <div className="flex items-center justify-center">
                   <Calendar className="w-4 h-4 mr-2 text-blue-600" />
-                  {eventData?.event_date ? new Date(eventData.event_date).toLocaleDateString() : '9/11/2025'}
+                  {eventData?.date ? new Date(eventData.date).toLocaleDateString() : '9/11/2025'}
                 </div>
                 <div className="flex items-center justify-center">
                   <Ticket className="w-4 h-4 mr-2 text-blue-600" />
