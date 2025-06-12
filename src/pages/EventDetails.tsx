@@ -154,6 +154,10 @@ const EventDetails = () => {
     console.log('Added to cart:', { product, variants, quantity });
   };
 
+  const handleBackToEvents = () => {
+    navigate('/browse');
+  };
+
   if (eventLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -170,8 +174,8 @@ const EventDetails = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">Error loading event details</p>
-          <Button asChild>
-            <Link to="/browse">Back to Events</Link>
+          <Button onClick={handleBackToEvents}>
+            Back to Events
           </Button>
         </div>
       </div>
@@ -194,11 +198,9 @@ const EventDetails = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Button variant="ghost" asChild className="mb-4">
-            <Link to="/browse">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Events
-            </Link>
+          <Button variant="ghost" onClick={handleBackToEvents} className="mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Events
           </Button>
         </div>
       </div>

@@ -1,20 +1,27 @@
+
 import React from 'react';
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import EventCard from '@/components/EventCard';
 import PromotedEventsCarousel from '@/components/PromotedEventsCarousel';
+import CartTimerBar from '@/components/CartTimerBar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Star, MapPin, Users } from 'lucide-react';
 import { useEvents } from '@/hooks/useEvents';
 import { useProducts } from '@/hooks/useProducts';
 import { usePromotedEvents } from '@/hooks/useSubscriptions';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
   const { data: events, isLoading: eventsLoading } = useEvents();
   const { data: products, isLoading: productsLoading } = useProducts();
   const { data: promotedEvents, isLoading: promotedLoading } = usePromotedEvents();
+  const { cartItems } = useShoppingCart();
+
+  // Get the event ID from cart items for the timer
+  const cartEventId = cartItems.length > 0 ? cartItems[0].eventId : '';
 
   // Get regular events for display (excluding promoted ones)
   const regularEvents = events?.filter(event => 
@@ -205,6 +212,9 @@ const Index = () => {
       </section>
 
       <Footer />
+
+      {/* Cart Timer Bar - only show if there are items in cart */}
+      {cartEventId && <CartTimerBar eventId={cartEventId} />}
     </div>
   );
 };

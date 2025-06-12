@@ -106,6 +106,12 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
     );
   };
 
+  const toggleProductSelection = (productId: string) => {
+    const currentQuantity = getProductOption(productId, 'quantity') || 0;
+    const newQuantity = currentQuantity === 0 ? 1 : 0;
+    updateProductOption(productId, 'quantity', newQuantity);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -133,7 +139,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
           <ShoppingBag className="w-5 h-5 mr-2" />
           Event Options
         </CardTitle>
-        <p className="text-gray-600">Select merchandise and products for this ticket</p>
+        <p className="text-gray-600">Select merchandise and products for this ticket (1 per ticket)</p>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -144,6 +150,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
             const quantity = getProductOption(product.id, 'quantity') || 0;
             const productTotal = calculateProductTotal(product);
             const showStock = shouldShowStock(product);
+            const isSelected = quantity > 0;
 
             return (
               <div key={product.id} className="border rounded-lg p-4">
@@ -215,32 +222,22 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                       </div>
                     )}
 
-                    {/* Quantity Selection */}
+                    {/* Selection Toggle - Only show if product can be selected */}
                     {(variantTypes.length === 0 || canSelectProduct(product)) && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium">Quantity:</span>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProductOption(product.id, 'quantity', Math.max(0, quantity - 1))}
-                              disabled={quantity === 0}
-                            >
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <span className="w-8 text-center font-medium">{quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProductOption(product.id, 'quantity', quantity + 1)}
-                              disabled={currentStock === 0 || quantity >= currentStock}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          <span className="text-sm font-medium">Add to ticket:</span>
+                          <Button
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleProductSelection(product.id)}
+                            disabled={currentStock === 0}
+                            className={isSelected ? "bg-green-600 hover:bg-green-700" : ""}
+                          >
+                            {isSelected ? "Added (1)" : "Add"}
+                          </Button>
                         </div>
-                        {quantity > 0 && (
+                        {isSelected && (
                           <div className="text-right">
                             <span className="text-lg font-bold text-blue-600">
                               RM {productTotal.toFixed(2)}
@@ -253,7 +250,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                     {/* Variant selection requirement notice */}
                     {variantTypes.length > 0 && !canSelectProduct(product) && !showStock && (
                       <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                        Please select all options to choose quantity
+                        Please select all options to add to your ticket
                       </div>
                     )}
                   </div>
