@@ -72,19 +72,18 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
       if (quantity > 0) {
         const ticket = event.ticketTypes.find(t => t.id === ticketId);
         if (ticket) {
-          console.log(`Adding ${quantity} tickets of type ${ticket.name}`);
-          // Add each ticket as individual items in the cart for flexibility
-          for (let i = 0; i < quantity; i++) {
-            const uniqueId = `${eventId}-${ticketId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            addToCart({
-              id: uniqueId,
-              title: `${event.title} - ${ticket.name}`,
-              price: ticket.price,
-              image: '/placeholder.svg',
-              eventId: eventId || '',
-              ticketType: ticket.name
-            });
-          }
+          console.log(`Adding ticket: ${ticket.name}, quantity: ${quantity}`);
+          
+          // Create a single cart item with the selected quantity
+          const uniqueId = `${eventId}-${ticketId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          addToCart({
+            id: uniqueId,
+            title: `${event.title} - ${ticket.name}`,
+            price: ticket.price,
+            image: '/placeholder.svg',
+            eventId: eventId || '',
+            ticketType: ticket.name
+          }, quantity);
         }
       }
     });

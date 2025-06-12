@@ -36,30 +36,15 @@ export const useShoppingCart = () => {
     localStorage.setItem('shopping-cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product: Omit<CartItem, 'quantity'>) => {
-    console.log('Adding to cart:', product);
+  const addToCart = (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
+    console.log('Adding to cart:', product, 'quantity:', quantity);
+    
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => 
-        item.eventId === product.eventId && 
-        item.ticketType === product.ticketType
-      );
-      
-      if (existingItem) {
-        // Increase quantity if item already exists
-        const updatedItems = prevItems.map(item =>
-          item.id === existingItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-        console.log('Updated existing item:', updatedItems);
-        return updatedItems;
-      } else {
-        // Add new item to cart
-        const newItem = { ...product, quantity: 1 };
-        const updatedItems = [...prevItems, newItem];
-        console.log('Added new item:', updatedItems);
-        return updatedItems;
-      }
+      // For tickets, we want to add them as separate items rather than combining
+      const newItem = { ...product, quantity };
+      const updatedItems = [...prevItems, newItem];
+      console.log('Added new item to cart:', updatedItems);
+      return updatedItems;
     });
     
     toast.success(`${product.title} added to cart!`);
