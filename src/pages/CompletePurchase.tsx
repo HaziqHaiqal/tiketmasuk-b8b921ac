@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,23 @@ import { ArrowLeft, Clock, User, FileText, Shield } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { useAuth } from '@/hooks/useAuth';
 import CartTimerBar from '@/components/CartTimerBar';
+import TicketHolderForm from '@/components/TicketHolderForm';
+import EventOptionsSection from '@/components/EventOptionsSection';
 import { useForm } from 'react-hook-form';
+
+interface TicketHolderData {
+  fullName: string;
+  email: string;
+  phone: string;
+  icPassport: string;
+  dateOfBirth: string;
+  gender: string;
+  country: string;
+  state: string;
+  address: string;
+  postcode: string;
+  ticketType: string;
+}
 
 interface PurchaseFormData {
   // Buyer Details
@@ -19,17 +35,8 @@ interface PurchaseFormData {
   buyerEmail: string;
   buyerPhone: string;
   
-  // Ticket Holder Details
-  ticketHolderFullName: string;
-  ticketHolderEmail: string;
-  ticketHolderPhone: string;
-  ticketHolderIC: string;
-  ticketHolderDOB: string;
-  ticketHolderGender: string;
-  ticketHolderCountry: string;
-  ticketHolderState: string;
-  ticketHolderAddress: string;
-  ticketHolderPostcode: string;
+  // Ticket Holders
+  ticketHolders: TicketHolderData[];
   
   // Waiver
   acceptTerms: boolean;
@@ -43,15 +50,43 @@ const CompletePurchase = () => {
   const { cartItems, getTotalPrice, getTotalItems } = useShoppingCart();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Group cart items by ticket type and count tickets
+  const ticketItems = useMemo(() => {
+    return cartItems.filter(item => item.ticketType !== 'product');
+  }, [cartItems]);
+
+  // Create ticket holder forms data
+  const ticketHoldersList = useMemo(() => {
+    const holders: Array<{ ticketType: string; index: number }> = [];
+    ticketItems.forEach((item) => {
+      for (let i = 0; i < item.quantity; i++) {
+        holders.push({
+          ticketType: item.ticketType,
+          index: holders.length
+        });
+      }
+    });
+    return holders;
+  }, [ticketItems]);
+
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<PurchaseFormData>({
     defaultValues: {
       buyerFullName: user?.user_metadata?.full_name || '',
       buyerEmail: user?.email || '',
       buyerPhone: user?.user_metadata?.phone || '',
-      ticketHolderFullName: user?.user_metadata?.full_name || '',
-      ticketHolderEmail: user?.email || '',
-      ticketHolderPhone: user?.user_metadata?.phone || '',
-      ticketHolderCountry: 'Malaysia',
+      ticketHolders: ticketHoldersList.map(() => ({
+        fullName: '',
+        email: '',
+        phone: '',
+        icPassport: '',
+        dateOfBirth: '',
+        gender: '',
+        country: 'Malaysia',
+        state: '',
+        address: '',
+        postcode: '',
+        ticketType: ''
+      })),
       acceptTerms: false,
       acceptPrivacy: false,
     }
@@ -164,142 +199,39 @@ const CompletePurchase = () => {
             </CardContent>
           </Card>
 
-          {/* Ticket Holder Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileText className="w-5 h-5 mr-2" />
-                Ticket Holder Details
-              </CardTitle>
-              <p className="text-gray-600">Information of the person attending the event</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="ticketHolderFullName">Full Name *</Label>
-                    <Input
-                      id="ticketHolderFullName"
-                      {...register('ticketHolderFullName', { required: 'Full name is required' })}
-                      className={errors.ticketHolderFullName ? 'border-red-500' : ''}
-                    />
-                    {errors.ticketHolderFullName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.ticketHolderFullName.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderEmail">Email *</Label>
-                    <Input
-                      id="ticketHolderEmail"
-                      type="email"
-                      {...register('ticketHolderEmail', { required: 'Email is required' })}
-                      className={errors.ticketHolderEmail ? 'border-red-500' : ''}
-                    />
-                    {errors.ticketHolderEmail && (
-                      <p className="text-red-500 text-sm mt-1">{errors.ticketHolderEmail.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderPhone">Mobile Number *</Label>
-                    <Input
-                      id="ticketHolderPhone"
-                      {...register('ticketHolderPhone', { required: 'Mobile number is required' })}
-                      className={errors.ticketHolderPhone ? 'border-red-500' : ''}
-                    />
-                    {errors.ticketHolderPhone && (
-                      <p className="text-red-500 text-sm mt-1">{errors.ticketHolderPhone.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderIC">IC/Passport Number *</Label>
-                    <Input
-                      id="ticketHolderIC"
-                      {...register('ticketHolderIC', { required: 'IC/Passport number is required' })}
-                      className={errors.ticketHolderIC ? 'border-red-500' : ''}
-                    />
-                    {errors.ticketHolderIC && (
-                      <p className="text-red-500 text-sm mt-1">{errors.ticketHolderIC.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderDOB">Date of Birth *</Label>
-                    <Input
-                      id="ticketHolderDOB"
-                      type="date"
-                      {...register('ticketHolderDOB', { required: 'Date of birth is required' })}
-                      className={errors.ticketHolderDOB ? 'border-red-500' : ''}
-                    />
-                    {errors.ticketHolderDOB && (
-                      <p className="text-red-500 text-sm mt-1">{errors.ticketHolderDOB.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderGender">Gender *</Label>
-                    <Select onValueChange={(value) => setValue('ticketHolderGender', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderCountry">Country *</Label>
-                    <Select onValueChange={(value) => setValue('ticketHolderCountry', value)} defaultValue="Malaysia">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Malaysia">Malaysia</SelectItem>
-                        <SelectItem value="Singapore">Singapore</SelectItem>
-                        <SelectItem value="Thailand">Thailand</SelectItem>
-                        <SelectItem value="Indonesia">Indonesia</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="ticketHolderState">State *</Label>
-                    <Input
-                      id="ticketHolderState"
-                      {...register('ticketHolderState', { required: 'State is required' })}
-                      className={errors.ticketHolderState ? 'border-red-500' : ''}
-                    />
-                    {errors.ticketHolderState && (
-                      <p className="text-red-500 text-sm mt-1">{errors.ticketHolderState.message}</p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="ticketHolderAddress">Address *</Label>
-                  <Input
-                    id="ticketHolderAddress"
-                    {...register('ticketHolderAddress', { required: 'Address is required' })}
-                    className={errors.ticketHolderAddress ? 'border-red-500' : ''}
-                  />
-                  {errors.ticketHolderAddress && (
-                    <p className="text-red-500 text-sm mt-1">{errors.ticketHolderAddress.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="ticketHolderPostcode">Postcode *</Label>
-                  <Input
-                    id="ticketHolderPostcode"
-                    {...register('ticketHolderPostcode', { required: 'Postcode is required' })}
-                    className={errors.ticketHolderPostcode ? 'border-red-500' : ''}
-                  />
-                  {errors.ticketHolderPostcode && (
-                    <p className="text-red-500 text-sm mt-1">{errors.ticketHolderPostcode.message}</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Event Options Section */}
+          <EventOptionsSection eventId={id!} />
 
-          {/* Waiver Section */}
+          {/* Ticket Holder Details */}
+          {ticketHoldersList.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Ticket Holder Details
+                </CardTitle>
+                <p className="text-gray-600">
+                  Please provide information for each ticket holder ({ticketHoldersList.length} ticket{ticketHoldersList.length !== 1 ? 's' : ''})
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {ticketHoldersList.map((holder, index) => (
+                    <TicketHolderForm
+                      key={index}
+                      ticketIndex={index}
+                      ticketType={holder.ticketType}
+                      register={register}
+                      setValue={setValue}
+                      errors={errors}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Terms & Conditions */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">

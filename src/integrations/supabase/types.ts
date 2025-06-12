@@ -315,6 +315,68 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_holders: {
+        Row: {
+          address: string
+          booking_id: string | null
+          country: string
+          created_at: string
+          date_of_birth: string
+          email: string
+          full_name: string
+          gender: string
+          ic_passport: string
+          id: string
+          phone: string
+          postcode: string
+          state: string
+          ticket_type: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          booking_id?: string | null
+          country?: string
+          created_at?: string
+          date_of_birth: string
+          email: string
+          full_name: string
+          gender: string
+          ic_passport: string
+          id?: string
+          phone: string
+          postcode: string
+          state: string
+          ticket_type: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          booking_id?: string | null
+          country?: string
+          created_at?: string
+          date_of_birth?: string
+          email?: string
+          full_name?: string
+          gender?: string
+          ic_passport?: string
+          id?: string
+          phone?: string
+          postcode?: string
+          state?: string
+          ticket_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_holders_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
