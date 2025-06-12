@@ -11,11 +11,11 @@ import EventDetailsTab from '@/components/EventDetailsTab';
 import EventOrganizerTab from '@/components/EventOrganizerTab';
 import CartTimerBar from '@/components/CartTimerBar';
 import Header from '@/components/Header';
-import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { useWaitingListCart } from '@/hooks/useWaitingListCart';
 
 const EventDetailsTabbed = () => {
   const { id } = useParams();
-  const { getTotalItems } = useShoppingCart();
+  const { getTotalItems } = useWaitingListCart(id!);
 
   // Mock event data - replace with actual data fetching
   const event = {

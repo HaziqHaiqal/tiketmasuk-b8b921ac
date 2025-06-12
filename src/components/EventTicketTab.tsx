@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Minus, Plus, ShoppingCart } from 'lucide-react';
-import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { useWaitingListCart } from '@/hooks/useWaitingListCart';
 import { toast } from 'sonner';
 
 interface TicketType {
@@ -30,7 +31,7 @@ interface EventTicketTabProps {
 const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
   const navigate = useNavigate();
   const { id: eventId } = useParams();
-  const { addToCart } = useShoppingCart();
+  const { addToCart, loading } = useWaitingListCart(eventId!);
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
 
   const updateTicketQuantity = (ticketId: string, change: number) => {
@@ -57,7 +58,7 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
     return Object.values(selectedTickets).reduce((total, quantity) => total + quantity, 0);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     const totalTickets = getTotalTickets();
     if (totalTickets === 0) {
       toast.error('Please select at least one ticket');
@@ -66,37 +67,41 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
 
     console.log('Processing cart addition:', { selectedTickets, eventId });
 
-    // Add each ticket type with its quantity to the cart
-    Object.entries(selectedTickets).forEach(([ticketId, quantity]) => {
-      if (quantity > 0) {
-        const ticket = event.ticketTypes.find(t => t.id === ticketId);
-        if (ticket) {
-          console.log(`Adding ticket: ${ticket.name}, quantity: ${quantity}`);
-          
-          // Create a unique cart item with the selected quantity
-          const uniqueId = `${eventId}-${ticketId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          const cartItem = {
-            id: uniqueId,
-            title: `${event.title} - ${ticket.name}`,
-            price: ticket.price,
-            image: '/placeholder.svg',
-            eventId: eventId || '',
-            ticketType: ticket.name
-          };
-          
-          console.log('About to add to cart:', cartItem, 'with quantity:', quantity);
-          addToCart(cartItem, quantity);
+    try {
+      // Add each ticket type with its quantity to the cart
+      for (const [ticketId, quantity] of Object.entries(selectedTickets)) {
+        if (quantity > 0) {
+          const ticket = event.ticketTypes.find(t => t.id === ticketId);
+          if (ticket) {
+            console.log(`Adding ticket: ${ticket.name}, quantity: ${quantity}`);
+            
+            // Create a cart item for the waiting list system
+            const cartItem = {
+              id: `${eventId}-${ticketId}-${Date.now()}`,
+              title: `${event.title} - ${ticket.name}`,
+              price: ticket.price,
+              image: '/placeholder.svg',
+              eventId: eventId || '',
+              ticketType: ticket.name
+            };
+            
+            console.log('About to add to waiting list cart:', cartItem, 'with quantity:', quantity);
+            await addToCart(cartItem, quantity);
+          }
         }
       }
-    });
 
-    // Clear selections and navigate to cart
-    setSelectedTickets({});
-    
-    // Add a small delay before navigation to ensure cart is updated
-    setTimeout(() => {
-      navigate(`/event/${eventId}/cart`);
-    }, 100);
+      // Clear selections after successful addition
+      setSelectedTickets({});
+      
+      // Navigate to cart after a brief delay to ensure the cart is updated
+      setTimeout(() => {
+        navigate(`/event/${eventId}/cart`);
+      }, 500);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error('Failed to add tickets to cart');
+    }
   };
 
   return (
@@ -174,9 +179,10 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
                     onClick={handleAddToCart}
                     size="lg"
                     className="bg-blue-600 hover:bg-blue-700"
+                    disabled={loading}
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
+                    {loading ? 'Adding...' : 'Add to Cart'}
                   </Button>
                 </div>
               </div>
