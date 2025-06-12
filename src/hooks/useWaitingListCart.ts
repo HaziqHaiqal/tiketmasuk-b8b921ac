@@ -227,8 +227,11 @@ export const useWaitingListCart = (eventId: string) => {
     const userId = getCurrentUserId();
     console.log('Setting up real-time subscription for user:', userId);
 
+    // Create a unique channel name to avoid conflicts
+    const channelName = `waiting_list_updates_${eventId}_${userId}_${Date.now()}`;
+    
     const subscription = supabase
-      .channel(`waiting_list_${eventId}_${userId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -247,6 +250,7 @@ export const useWaitingListCart = (eventId: string) => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up subscription:', channelName);
       subscription.unsubscribe();
     };
   }, [eventId, user?.id]);
