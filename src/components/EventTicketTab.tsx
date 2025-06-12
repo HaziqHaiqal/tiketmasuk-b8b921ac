@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ interface EventTicketTabProps {
 
 const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
   const navigate = useNavigate();
+  const { id: eventId } = useParams();
   const { addToCart } = useShoppingCart();
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
 
@@ -64,26 +65,33 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
       return;
     }
 
-    // Add each ticket individually to the cart
+    console.log('Processing cart addition:', { selectedTickets, eventId });
+
+    // Add each ticket type with its quantity to the cart
     Object.entries(selectedTickets).forEach(([ticketId, quantity]) => {
       if (quantity > 0) {
         const ticket = event.ticketTypes.find(t => t.id === ticketId);
         if (ticket) {
-          // Add each ticket as a separate item in the cart
+          console.log(`Adding ${quantity} tickets of type ${ticket.name}`);
+          // Add each ticket as individual items in the cart for flexibility
           for (let i = 0; i < quantity; i++) {
+            const uniqueId = `${eventId}-${ticketId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             addToCart({
-              id: `${ticketId}-${Date.now()}-${Math.random()}`, // Ensure unique ID
-              title: `${ticket.name}`,
+              id: uniqueId,
+              title: `${event.title} - ${ticket.name}`,
               price: ticket.price,
-              image: '/placeholder.svg'
+              image: '/placeholder.svg',
+              eventId: eventId || '',
+              ticketType: ticket.name
             });
           }
         }
       }
     });
 
-    // Navigate to cart after adding tickets
-    navigate(`/event/${event.id}/cart`);
+    // Clear selections and navigate to cart
+    setSelectedTickets({});
+    navigate(`/event/${eventId}/cart`);
   };
 
   return (
