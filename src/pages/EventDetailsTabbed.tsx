@@ -23,10 +23,14 @@ const EventDetailsTabbed = () => {
     date: '2024-03-15',
     time: '09:00 AM',
     location: 'Kuala Lumpur Convention Centre',
+    venue: 'Main Convention Hall',
     image: '/placeholder.svg',
     description: 'Join us for the biggest tech conference of the year featuring industry leaders, innovative workshops, and networking opportunities.',
+    fullDescription: 'This comprehensive tech conference will feature over 50 speakers from leading technology companies, hands-on workshops covering the latest in AI, blockchain, and cloud computing, plus extensive networking opportunities. Whether you\'re a seasoned professional or just starting your tech career, this event offers valuable insights and connections.',
     category: 'Technology',
     organizer: 'Tech Events Malaysia',
+    attendees: 847,
+    maxCapacity: 1000,
     ticketTypes: [
       {
         id: 'early-bird',
@@ -53,6 +57,21 @@ const EventDetailsTabbed = () => {
         maxPerPerson: 2,
       }
     ]
+  };
+
+  // Mock organizer data
+  const organizer = {
+    name: 'Tech Events Malaysia',
+    description: 'Tech Events Malaysia is a leading event organizer specializing in technology conferences and workshops. With over 10 years of experience, we have successfully organized more than 200 events across Southeast Asia, bringing together industry leaders, innovators, and technology enthusiasts.',
+    logo: '/placeholder.svg',
+    rating: 4.8,
+    eventsCount: 156,
+    yearsActive: 10,
+    contact: {
+      email: 'info@techeventsmalaysia.com',
+      phone: '+60 3-2123 4567',
+      website: 'www.techeventsmalaysia.com'
+    }
   };
 
   return (
@@ -146,7 +165,7 @@ const EventDetailsTabbed = () => {
           </TabsContent>
 
           <TabsContent value="organizer">
-            <EventOrganizerTab event={event} />
+            <EventOrganizerTab organizer={organizer} />
           </TabsContent>
         </Tabs>
       </div>
