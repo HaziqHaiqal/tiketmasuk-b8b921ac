@@ -86,7 +86,7 @@ export const useWaitingListCart = (eventId: string) => {
     }
   };
 
-  // Join waiting list when adding to cart
+  // Add to cart - follows Convex pattern
   const addToCart = async (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
     if (loading) return;
     
@@ -95,10 +95,27 @@ export const useWaitingListCart = (eventId: string) => {
       const userId = getCurrentUserId();
       console.log('Adding to cart for user:', userId, 'product:', product);
 
-      // Call the join_waiting_list function with text parameter (for all users)
+      // Check if user already has items in cart for this event
+      const existingCartKey = `cart-${userId}-${eventId}`;
+      const existingCart = localStorage.getItem(existingCartKey);
+      
+      if (existingCart) {
+        // If cart exists, just add the item locally
+        const existingItems = JSON.parse(existingCart);
+        const newItem = { ...product, quantity };
+        const updatedItems = [...existingItems, newItem];
+        
+        setCartItems(updatedItems);
+        localStorage.setItem(existingCartKey, JSON.stringify(updatedItems));
+        
+        toast.success('Item added to cart');
+        return;
+      }
+
+      // If no cart exists, join waiting list first
       const { data, error } = await supabase.rpc('join_waiting_list', {
         event_uuid: eventId,
-        user_uuid: userId // Pass as text for both authenticated and guest users
+        user_uuid: userId
       });
 
       if (error) {
@@ -109,18 +126,15 @@ export const useWaitingListCart = (eventId: string) => {
 
       console.log('Join waiting list response:', data);
 
-      // Handle the response - data should be a JSON object
       if (data && typeof data === 'object') {
         const response = data as unknown as WaitingListResponse;
         
         if (response.success) {
           // Add item to cart
           const newItem = { ...product, quantity };
-          const updatedItems = [...cartItems, newItem];
+          const updatedItems = [newItem];
           
           console.log('Adding item to cart:', newItem);
-          console.log('Updated cart items:', updatedItems);
-          
           setCartItems(updatedItems);
 
           // Save cart to localStorage
@@ -224,7 +238,6 @@ export const useWaitingListCart = (eventId: string) => {
       return null;
     }
     
-    // offer_expires_at is stored as bigint (milliseconds) or timestamp
     if (waitingListEntry.offer_expires_at) {
       // If it's already in milliseconds, return as is
       if (waitingListEntry.offer_expires_at > 1000000000000) {
@@ -237,21 +250,23 @@ export const useWaitingListCart = (eventId: string) => {
     return null;
   };
 
-  // Initialize on mount and restore cart if user has waiting list entry
+  // Initialize on mount
   useEffect(() => {
     const initializeCart = async () => {
       await checkWaitingListStatus();
       
       // If no waiting list entry, try to restore from localStorage anyway (for persistence)
-      const userId = getCurrentUserId();
-      const savedCart = localStorage.getItem(`cart-${userId}-${eventId}`);
-      if (savedCart && cartItems.length === 0) {
-        try {
-          const cartData = JSON.parse(savedCart);
-          console.log('Restoring cart from localStorage on init:', cartData);
-          setCartItems(cartData);
-        } catch (error) {
-          console.error('Error parsing saved cart on init:', error);
+      if (!waitingListEntry) {
+        const userId = getCurrentUserId();
+        const savedCart = localStorage.getItem(`cart-${userId}-${eventId}`);
+        if (savedCart && cartItems.length === 0) {
+          try {
+            const cartData = JSON.parse(savedCart);
+            console.log('Restoring cart from localStorage on init:', cartData);
+            setCartItems(cartData);
+          } catch (error) {
+            console.error('Error parsing saved cart on init:', error);
+          }
         }
       }
     };
@@ -266,7 +281,6 @@ export const useWaitingListCart = (eventId: string) => {
     const userId = getCurrentUserId();
     console.log('Setting up real-time subscription for user:', userId);
 
-    // Create a unique channel name to avoid conflicts
     const channelName = `waiting_list_updates_${eventId}_${userId.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
     
     const subscription = supabase
