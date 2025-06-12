@@ -10,7 +10,7 @@ interface WaitingListEntry {
   event_id: string;
   status: 'waiting' | 'offered' | 'purchased' | 'expired';
   offer_expires_at: number | null;
-  quantity?: number; // Add quantity field for UI compatibility
+  quantity?: number;
   created_at: string;
   updated_at: string;
 }
@@ -29,9 +29,12 @@ export const useTicketReservation = (eventId?: string) => {
   const [reservation, setReservation] = useState<WaitingListEntry | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Check if user has active entry in waiting list for this event
   const checkReservation = async () => {
-    if (!user || !eventId) return;
+    if (!user || !eventId) {
+      console.log('No user or eventId for reservation check:', { user: !!user, eventId });
+      setReservation(null);
+      return;
+    }
 
     try {
       console.log('Checking reservation for user:', user.id, 'event:', eventId);
@@ -46,16 +49,23 @@ export const useTicketReservation = (eventId?: string) => {
 
       if (error) {
         console.error('Error checking reservation:', error);
+        setReservation(null);
         return;
       }
 
       console.log('Reservation check result:', data);
 
       if (data) {
-        // Ensure proper timestamp handling - convert to milliseconds if needed
+        // Handle timestamp conversion properly
         let expiresAt = data.offer_expires_at;
-        if (expiresAt && typeof expiresAt === 'string') {
+        
+        // If it's a string timestamp, convert to milliseconds
+        if (typeof expiresAt === 'string') {
           expiresAt = new Date(expiresAt).getTime();
+        }
+        // If it's a number but looks like seconds (less than year 2000), convert to milliseconds
+        else if (typeof expiresAt === 'number' && expiresAt < 946684800000) {
+          expiresAt = expiresAt * 1000;
         }
         
         const entryWithQuantity = { 
@@ -67,14 +77,15 @@ export const useTicketReservation = (eventId?: string) => {
         console.log('Setting reservation with processed expires_at:', entryWithQuantity);
         setReservation(entryWithQuantity);
       } else {
+        console.log('No active reservation found');
         setReservation(null);
       }
     } catch (error) {
       console.error('Error in checkReservation:', error);
+      setReservation(null);
     }
   };
 
-  // Create waiting list entry (join queue or get immediate offer)
   const createReservation = async (ticketTypeId: string, quantity: number) => {
     if (!user || !eventId) return false;
 
@@ -82,7 +93,6 @@ export const useTicketReservation = (eventId?: string) => {
     try {
       console.log('Creating reservation for user:', user.id, 'event:', eventId);
       
-      // Use the join_waiting_list function that handles immediate offers or queuing
       const { data, error } = await supabase.rpc('join_waiting_list', {
         event_uuid: eventId,
         user_uuid: user.id
@@ -96,7 +106,6 @@ export const useTicketReservation = (eventId?: string) => {
 
       console.log('Join waiting list response:', data);
 
-      // Safely cast the Json response to our interface
       const response = data as unknown as JoinWaitingListResponse;
       
       if (response?.success) {
@@ -122,7 +131,6 @@ export const useTicketReservation = (eventId?: string) => {
     }
   };
 
-  // Release waiting list entry
   const releaseReservation = async () => {
     if (!reservation) return false;
 
@@ -150,11 +158,12 @@ export const useTicketReservation = (eventId?: string) => {
     }
   };
 
+  // Check reservation when hook mounts or dependencies change
   useEffect(() => {
-    if (eventId) {
+    if (eventId && user) {
       checkReservation();
     }
-  }, [user, eventId]);
+  }, [user?.id, eventId]);
 
   // Set up real-time subscription for waiting list updates
   useEffect(() => {
@@ -174,7 +183,10 @@ export const useTicketReservation = (eventId?: string) => {
         },
         (payload) => {
           console.log('Waiting list update for user reservation:', payload);
-          checkReservation();
+          // Small delay to ensure DB consistency
+          setTimeout(() => {
+            checkReservation();
+          }, 100);
         }
       )
       .subscribe();
@@ -182,7 +194,7 @@ export const useTicketReservation = (eventId?: string) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [eventId, user]);
+  }, [eventId, user?.id]);
 
   return {
     reservation,

@@ -20,32 +20,25 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    console.log('CartTimerBar reservation:', reservation);
-    console.log('CartTimerBar queueStats:', queueStats);
+    console.log('CartTimerBar - Reservation data:', reservation);
+    console.log('CartTimerBar - Queue stats:', queueStats);
     
     let timer: NodeJS.Timeout;
     
-    if (reservation && reservation.offer_expires_at) {
+    if (reservation?.offer_expires_at && reservation.status === 'offered') {
       console.log('Setting up timer with reservation expiry:', reservation.offer_expires_at);
       
       const updateTimer = () => {
         const now = Date.now();
-        let expirationTime: number;
-        
-        // Handle both timestamp formats
-        if (typeof reservation.offer_expires_at === 'number') {
-          expirationTime = reservation.offer_expires_at;
-        } else {
-          expirationTime = new Date(reservation.offer_expires_at).getTime();
-        }
-        
+        const expirationTime = reservation.offer_expires_at;
         const difference = expirationTime - now;
-        console.log('Timer calculation:', { now, expirationTime, difference });
+        
+        console.log('Timer update:', { now, expirationTime, difference, timeLeft: Math.floor(difference / 1000) });
         
         if (difference > 0) {
           setTimeLeft(Math.floor(difference / 1000));
         } else {
-          console.log('Timer expired, clearing cart');
+          console.log('Timer expired, clearing cart and redirecting');
           setTimeLeft(0);
           clearCart(eventId, navigate);
         }
@@ -56,9 +49,9 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
 
       // Set up interval to update every second
       timer = setInterval(updateTimer, 1000);
-    } else {
-      // Fallback to 20 minute timer if no reservation data
-      console.log('Using fallback timer - no reservation data');
+    } else if (getTotalItems() > 0) {
+      // Fallback timer when we have cart items but no reservation yet
+      console.log('Using fallback timer - cart has items but no reservation');
       const fallbackTime = 20 * 60; // 20 minutes in seconds
       setTimeLeft(fallbackTime);
       
@@ -72,6 +65,8 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
           return prev - 1;
         });
       }, 1000);
+    } else {
+      setTimeLeft(0);
     }
 
     return () => {
@@ -79,7 +74,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
         clearInterval(timer);
       }
     };
-  }, [reservation?.offer_expires_at, clearCart, navigate, eventId]);
+  }, [reservation?.offer_expires_at, reservation?.status, getTotalItems(), clearCart, navigate, eventId]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -102,6 +97,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
 
   const isHomePage = location.pathname === '/';
 
+  // Don't show if no items in cart
   if (getTotalItems() === 0) return null;
 
   return (
@@ -153,7 +149,6 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
           </div>
         </div>
       </div>
-      {/* Add margin bottom to body content when cart timer is visible and not on home page */}
       {!isHomePage && (
         <div className="h-20"></div>
       )}
