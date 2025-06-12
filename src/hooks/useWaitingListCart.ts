@@ -99,20 +99,23 @@ export const useWaitingListCart = (eventId: string) => {
       const existingCartKey = `cart-${userId}-${eventId}`;
       const existingCart = localStorage.getItem(existingCartKey);
       
-      if (existingCart) {
-        // If cart exists, just add the item locally
-        const existingItems = JSON.parse(existingCart);
-        const newItem = { ...product, quantity };
+      // Create the new item
+      const newItem = { ...product, quantity };
+      
+      if (existingCart || waitingListEntry) {
+        // If cart exists or user is already in waiting list, just add the item locally
+        const existingItems = existingCart ? JSON.parse(existingCart) : cartItems;
         const updatedItems = [...existingItems, newItem];
         
         setCartItems(updatedItems);
         localStorage.setItem(existingCartKey, JSON.stringify(updatedItems));
         
+        console.log('Added item to existing cart:', newItem);
         toast.success('Item added to cart');
         return;
       }
 
-      // If no cart exists, join waiting list first
+      // If no cart exists and not in waiting list, join waiting list first
       const { data, error } = await supabase.rpc('join_waiting_list', {
         event_uuid: eventId,
         user_uuid: userId
@@ -131,7 +134,6 @@ export const useWaitingListCart = (eventId: string) => {
         
         if (response.success) {
           // Add item to cart
-          const newItem = { ...product, quantity };
           const updatedItems = [newItem];
           
           console.log('Adding item to cart:', newItem);
