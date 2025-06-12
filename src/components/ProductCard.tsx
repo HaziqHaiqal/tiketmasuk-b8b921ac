@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ interface ProductCardProps {
   reviews: number;
   vendor: string;
   inStock: boolean;
+  eventId?: string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -31,7 +31,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   rating,
   reviews,
   vendor,
-  inStock
+  inStock,
+  eventId
 }) => {
   const { addToCart } = useShoppingCart();
   const discountPercentage = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
@@ -43,7 +44,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       id,
       title,
       price,
-      image
+      image,
+      eventId: eventId || 'general',
+      ticketType: 'product'
     });
   };
 

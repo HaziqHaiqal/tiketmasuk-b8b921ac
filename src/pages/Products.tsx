@@ -62,8 +62,9 @@ const Products = () => {
                 category={product.category}
                 rating={product.rating || 0}
                 reviews={product.reviews || 0}
-                vendor="Vendor" // We'll fetch vendor names later
+                vendor="Vendor"
                 inStock={product.in_stock ?? true}
+                eventId={product.event_id || undefined}
               />
             ))}
           </div>
