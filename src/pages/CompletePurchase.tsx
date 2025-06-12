@@ -6,13 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Clock, User, FileText, Shield } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { useAuth } from '@/hooks/useAuth';
 import CartTimerBar from '@/components/CartTimerBar';
 import TicketHolderForm from '@/components/TicketHolderForm';
-import EventOptionsSection from '@/components/EventOptionsSection';
 import { useForm } from 'react-hook-form';
 
 interface TicketHolderData {
@@ -199,9 +197,6 @@ const CompletePurchase = () => {
             </CardContent>
           </Card>
 
-          {/* Event Options Section */}
-          <EventOptionsSection eventId={id!} />
-
           {/* Ticket Holder Details */}
           {ticketHoldersList.length > 0 && (
             <Card>
@@ -221,6 +216,7 @@ const CompletePurchase = () => {
                       key={index}
                       ticketIndex={index}
                       ticketType={holder.ticketType}
+                      eventId={id!}
                       register={register}
                       setValue={setValue}
                       errors={errors}
