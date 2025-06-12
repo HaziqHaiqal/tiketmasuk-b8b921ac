@@ -2,281 +2,161 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { 
-  User, 
-  ShoppingCart, 
-  Menu,
-  LogOut,
-  Settings,
-  BarChart3,
-  X,
-  Clock,
-  QrCode
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Search, Menu, X, User, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const Header = () => {
-  const { user, profile, logout, isVendor, isAdmin, loading } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    await logout();
+    navigate('/');
   };
-
-  const isApprovedVendor = isVendor && profile?.approval_status === 'approved';
-  const isPendingVendor = isVendor && profile?.approval_status === 'pending';
 
   return (
     <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14 sm:h-16">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs sm:text-sm">T</span>
-            </div>
-            <span className="text-lg sm:text-xl font-bold text-gray-900 hidden sm:block">Tiketmasuk</span>
-            <span className="text-lg font-bold text-gray-900 sm:hidden">TM</span>
+            <Calendar className="w-8 h-8 text-blue-600" />
+            <span className="text-xl font-bold text-gray-900">EventHub</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link to="/browse" className="text-gray-700 hover:text-blue-600 font-medium text-sm">
-              Browse
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link to="/events" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Browse Events
             </Link>
-            <Link to="/products" className="text-gray-700 hover:text-blue-600 font-medium text-sm">
-              Products
+            <Link to="/create-event" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Create Event
             </Link>
-            <Link to="/organizers" className="text-gray-700 hover:text-blue-600 font-medium text-sm">
+            <Link to="/organizers" className="text-gray-700 hover:text-blue-600 transition-colors">
               Organizers
             </Link>
+          </nav>
 
-            {/* Cart */}
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                0
-              </span>
-            </Button>
+          {/* Search Bar - Desktop */}
+          <div className="hidden md:flex items-center space-x-4 flex-1 max-w-lg mx-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search events..."
+                className="pl-10 pr-4 py-2 w-full"
+              />
+            </div>
+          </div>
 
-            {/* User Menu */}
-            {loading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : user && profile ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center space-x-2 text-sm">
-                    <User className="w-4 h-4" />
-                    <span className="hidden lg:block">{profile.name}</span>
-                    {isPendingVendor && (
-                      <Clock className="w-4 h-4 text-yellow-500" />
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-white">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center">
-                      <User className="w-4 h-4 mr-2" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  
-                  {isPendingVendor && (
-                    <DropdownMenuItem disabled>
-                      <Clock className="w-4 h-4 mr-2 text-yellow-500" />
-                      <span className="text-yellow-600">Approval Pending</span>
-                    </DropdownMenuItem>
-                  )}
-                  
-                  {isApprovedVendor && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/vendor/dashboard" className="flex items-center">
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          Vendor Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/vendor/qr-scanner" className="flex items-center">
-                          <QrCode className="w-4 h-4 mr-2" />
-                          QR Scanner
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="flex items-center">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Admin Panel
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          {/* User Menu - Desktop */}
+          <div className="hidden md:flex items-center space-x-4">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-700">Welcome, {user.email}</span>
+                <Button variant="outline" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" asChild size="sm">
+                <Button variant="ghost" asChild>
                   <Link to="/login">Login</Link>
                 </Button>
-                <Button asChild size="sm">
+                <Button asChild>
                   <Link to="/register">Sign Up</Link>
                 </Button>
               </div>
             )}
           </div>
 
-          {/* Mobile Navigation */}
-          <div className="md:hidden flex items-center space-x-2">
-            {/* Cart */}
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                0
-              </span>
-            </Button>
-
-            {/* Mobile Menu Button */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-white py-4 space-y-2">
-            <Link 
-              to="/browse" 
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Browse Events
-            </Link>
-            <Link 
-              to="/products" 
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Products
-            </Link>
-            <Link 
-              to="/organizers" 
-              className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Organizers
-            </Link>
-            
-            {loading ? (
-              <div className="px-4 py-2">
-                <Skeleton className="h-8 w-full" />
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t">
+            <div className="space-y-4">
+              {/* Mobile Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search events..."
+                  className="pl-10 pr-4 py-2 w-full"
+                />
               </div>
-            ) : user && profile ? (
-              <div className="border-t pt-2 mt-2">
-                <div className="px-4 py-2 text-sm font-medium text-gray-900 flex items-center">
-                  {profile.name}
-                  {isPendingVendor && (
-                    <Clock className="w-4 h-4 ml-2 text-yellow-500" />
-                  )}
-                </div>
-                <Link 
-                  to="/profile" 
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                  onClick={() => setMobileMenuOpen(false)}
+
+              {/* Mobile Navigation */}
+              <nav className="space-y-2">
+                <Link
+                  to="/events"
+                  className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
                 >
-                  Profile
+                  Browse Events
                 </Link>
-                {isPendingVendor && (
-                  <div className="px-4 py-2 text-yellow-600 text-sm">
-                    <Clock className="w-4 h-4 inline mr-2" />
-                    Approval Pending
+                <Link
+                  to="/create-event"
+                  className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Create Event
+                </Link>
+                <Link
+                  to="/organizers"
+                  className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Organizers
+                </Link>
+              </nav>
+
+              {/* Mobile User Menu */}
+              <div className="pt-4 border-t">
+                {user ? (
+                  <div className="space-y-2">
+                    <p className="px-3 py-2 text-gray-700">Welcome, {user.email}</p>
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button 
+                      variant="ghost" 
+                      className="w-full" 
+                      asChild
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Link to="/login">Login</Link>
+                    </Button>
+                    <Button 
+                      className="w-full" 
+                      asChild
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Link to="/register">Sign Up</Link>
+                    </Button>
                   </div>
                 )}
-                {isApprovedVendor && (
-                  <>
-                    <Link 
-                      to="/vendor/dashboard" 
-                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Vendor Dashboard
-                    </Link>
-                    <Link 
-                      to="/vendor/qr-scanner" 
-                      className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      QR Scanner
-                    </Link>
-                  </>
-                )}
-                {isAdmin && (
-                  <Link 
-                    to="/admin" 
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Admin Panel
-                  </Link>
-                )}
-                <button 
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                >
-                  Logout
-                </button>
               </div>
-            ) : (
-              <div className="border-t pt-2 mt-2 space-y-2">
-                <Link 
-                  to="/login" 
-                  className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="block px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded mx-4"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+            </div>
           </div>
         )}
       </div>

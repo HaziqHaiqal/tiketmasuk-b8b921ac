@@ -154,6 +154,7 @@ const EventDetails = () => {
   };
 
   const handleBackToEvents = () => {
+    console.log('Navigating back to events');
     navigate('/events');
   };
 
