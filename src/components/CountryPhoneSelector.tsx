@@ -39,11 +39,16 @@ const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
       <div className="flex space-x-2">
         <Select value={countryCode} onValueChange={onCountryChange}>
           <SelectTrigger className="w-32">
-            <SelectValue placeholder="Select">
-              {selectedCountry && (
+            <SelectValue>
+              {selectedCountry ? (
                 <span className="flex items-center space-x-2">
                   <span>{selectedCountry.flag}</span>
                   <span>{selectedCountry.code}</span>
+                </span>
+              ) : (
+                <span className="flex items-center space-x-2">
+                  <span>🇲🇾</span>
+                  <span>+60</span>
                 </span>
               )}
             </SelectValue>

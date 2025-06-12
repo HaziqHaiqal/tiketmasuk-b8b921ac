@@ -206,7 +206,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) =>
                   </Select>
                 </div>
 
-                {/* Stock Display and Quantity Controls */}
+                {/* Stock Display and Quantity Controls - Only show when variant is selected */}
                 {selectedVariant && (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
