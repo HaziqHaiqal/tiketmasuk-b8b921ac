@@ -24,6 +24,25 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
   // Filter products for this specific event
   const eventProducts = products?.filter(product => product.event_id === eventId) || [];
 
+  React.useEffect(() => {
+    // Auto-select required products with quantity 1
+    const requiredProducts = eventProducts.filter(product => product.is_required);
+    const initialOptions: Record<string, any> = { ...selectedOptions };
+    
+    requiredProducts.forEach(product => {
+      if (!initialOptions[product.id]) {
+        initialOptions[product.id] = { quantity: 1 };
+      }
+    });
+    
+    if (Object.keys(initialOptions).length !== Object.keys(selectedOptions).length) {
+      setSelectedOptions(initialOptions);
+      if (onOptionsChange) {
+        onOptionsChange(initialOptions);
+      }
+    }
+  }, [eventProducts, selectedOptions, onOptionsChange]);
+
   const updateProductOption = (productId: string, field: string, value: any) => {
     const newOptions = {
       ...selectedOptions,
@@ -79,7 +98,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
   };
 
   const calculateProductTotal = (product: any) => {
-    const quantity = getProductOption(product.id, 'quantity') || 0;
+    const quantity = getProductOption(product.id, 'quantity') || (product.is_required ? 1 : 0);
     const priceAdjustment = getPriceAdjustment(product);
     return (product.price + priceAdjustment) * quantity;
   };
@@ -147,10 +166,11 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
             const variantTypes = getVariantTypes(product);
             const currentStock = getCurrentStock(product);
             const priceAdjustment = getPriceAdjustment(product);
-            const quantity = getProductOption(product.id, 'quantity') || 0;
+            const quantity = getProductOption(product.id, 'quantity') || (product.is_required ? 1 : 0);
             const productTotal = calculateProductTotal(product);
             const showStock = shouldShowStock(product);
             const isSelected = quantity > 0;
+            const isRequired = product.is_required;
 
             return (
               <div key={product.id} className="border rounded-lg p-4">
@@ -162,7 +182,14 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                   />
                   <div className="flex-1 space-y-4">
                     <div>
-                      <h3 className="font-semibold">{product.title}</h3>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-semibold">{product.title}</h3>
+                        {isRequired && (
+                          <Badge variant="destructive" className="text-xs">
+                            Required
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-gray-600 text-sm">{product.description}</p>
                       <div className="flex items-center space-x-2 mt-2">
                         <span className="text-lg font-bold text-green-600">
@@ -222,21 +249,33 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                       </div>
                     )}
 
-                    {/* Selection Toggle - Only show if product can be selected */}
+                    {/* Selection Section */}
                     {(variantTypes.length === 0 || canSelectProduct(product)) && (
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium">Add to ticket:</span>
-                          <Button
-                            variant={isSelected ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleProductSelection(product.id)}
-                            disabled={currentStock === 0}
-                            className={isSelected ? "bg-green-600 hover:bg-green-700" : ""}
-                          >
-                            {isSelected ? "Added (1)" : "Add"}
-                          </Button>
-                        </div>
+                        {isRequired ? (
+                          // Required products - no toggle, always quantity 1
+                          <div className="flex items-center space-x-3">
+                            <span className="text-sm font-medium text-green-600">Included with ticket</span>
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                              Quantity: 1
+                            </Badge>
+                          </div>
+                        ) : (
+                          // Optional products - show add to ticket toggle
+                          <div className="flex items-center space-x-3">
+                            <span className="text-sm font-medium">Add to ticket:</span>
+                            <Button
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => toggleProductSelection(product.id)}
+                              disabled={currentStock === 0}
+                              className={isSelected ? "bg-green-600 hover:bg-green-700" : ""}
+                            >
+                              {isSelected ? "Added (1)" : "Add"}
+                            </Button>
+                          </div>
+                        )}
+                        
                         {isSelected && (
                           <div className="text-right">
                             <span className="text-lg font-bold text-blue-600">
@@ -250,7 +289,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                     {/* Variant selection requirement notice */}
                     {variantTypes.length > 0 && !canSelectProduct(product) && !showStock && (
                       <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                        Please select all options to add to your ticket
+                        Please select all options to continue
                       </div>
                     )}
                   </div>

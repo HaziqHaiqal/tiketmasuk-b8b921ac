@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Clock, X } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { useTicketReservation } from '@/hooks/useTicketReservation';
 
 interface CartTimerBarProps {
   eventId: string;
@@ -13,21 +14,44 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { getTotalItems, clearCart } = useShoppingCart();
-  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes in seconds
+  const { reservation } = useTicketReservation(eventId);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
+    if (reservation && reservation.offer_expires_at) {
+      const updateTimer = () => {
+        const now = Date.now();
+        const difference = reservation.offer_expires_at - now;
+        
+        if (difference > 0) {
+          setTimeLeft(Math.floor(difference / 1000));
+        } else {
+          setTimeLeft(0);
           clearCart(eventId, navigate);
-          return 0;
         }
-        return prev - 1;
-      });
-    }, 1000);
+      };
 
-    return () => clearInterval(timer);
-  }, [clearCart, navigate, eventId]);
+      // Update immediately
+      updateTimer();
+
+      // Set up interval
+      const timer = setInterval(updateTimer, 1000);
+      return () => clearInterval(timer);
+    } else {
+      // Fallback to 20 minute timer if no reservation data
+      setTimeLeft(20 * 60);
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearCart(eventId, navigate);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [reservation, clearCart, navigate, eventId]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
