@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -93,41 +92,46 @@ export const useWaitingListCart = (eventId: string) => {
       const userId = getCurrentUserId();
       console.log('Adding to cart for user:', userId);
 
-      // Call the join_waiting_list function
+      // Call the join_waiting_list function with text parameter (for guest users)
       const { data, error } = await supabase.rpc('join_waiting_list', {
         event_uuid: eventId,
-        user_uuid: userId
+        user_uuid: userId // This will be passed as text, matching the function signature
       });
 
       if (error) {
         console.error('Error joining waiting list:', error);
-        toast.error('Failed to join waiting list');
+        toast.error('Failed to join waiting list: ' + error.message);
         return;
       }
 
       console.log('Join waiting list response:', data);
 
-      const response = data as unknown as WaitingListResponse;
-      
-      if (response?.success) {
-        // Add item to cart
-        const newItem = { ...product, quantity };
-        const updatedItems = [...cartItems, newItem];
-        setCartItems(updatedItems);
+      // Handle the response properly
+      if (data && typeof data === 'object') {
+        const response = data as WaitingListResponse;
+        
+        if (response.success) {
+          // Add item to cart
+          const newItem = { ...product, quantity };
+          const updatedItems = [...cartItems, newItem];
+          setCartItems(updatedItems);
 
-        // Save cart to localStorage
-        localStorage.setItem(`cart-${userId}-${eventId}`, JSON.stringify(updatedItems));
+          // Save cart to localStorage
+          localStorage.setItem(`cart-${userId}-${eventId}`, JSON.stringify(updatedItems));
 
-        if (response.status === 'offered') {
-          toast.success('Ticket offered! You have 20 minutes to complete purchase.');
+          if (response.status === 'offered') {
+            toast.success('Ticket offered! You have 20 minutes to complete purchase.');
+          } else {
+            toast.success('Added to waiting list! You\'ll be notified when tickets become available.');
+          }
+
+          // Update waiting list entry
+          await checkWaitingListStatus();
         } else {
-          toast.success('Added to waiting list! You\'ll be notified when tickets become available.');
+          toast.error(response.error || 'Failed to join waiting list');
         }
-
-        // Update waiting list entry
-        await checkWaitingListStatus();
       } else {
-        toast.error(response?.error || 'Failed to join waiting list');
+        toast.error('Unexpected response from server');
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
