@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +43,25 @@ export const useWaitingListCart = (eventId: string) => {
     return user ? user.id : getGuestSessionId();
   };
 
+  // Load cart from localStorage immediately
+  const loadCartFromStorage = () => {
+    const userId = getCurrentUserId();
+    const cartKey = `cart-${userId}-${eventId}`;
+    const savedCart = localStorage.getItem(cartKey);
+    
+    if (savedCart) {
+      try {
+        const cartData = JSON.parse(savedCart);
+        console.log('Loading cart from localStorage:', cartData);
+        setCartItems(cartData);
+        return true;
+      } catch (error) {
+        console.error('Error parsing saved cart:', error);
+      }
+    }
+    return false;
+  };
+
   // Check current waiting list status
   const checkWaitingListStatus = async () => {
     if (!eventId) return;
@@ -67,20 +85,6 @@ export const useWaitingListCart = (eventId: string) => {
 
       console.log('Waiting list entry found:', data);
       setWaitingListEntry(data);
-
-      // If user has an active entry, restore cart items from localStorage
-      if (data) {
-        const savedCart = localStorage.getItem(`cart-${userId}-${eventId}`);
-        if (savedCart) {
-          try {
-            const cartData = JSON.parse(savedCart);
-            console.log('Restoring cart from localStorage:', cartData);
-            setCartItems(cartData);
-          } catch (error) {
-            console.error('Error parsing saved cart:', error);
-          }
-        }
-      }
     } catch (error) {
       console.error('Error in checkWaitingListStatus:', error);
     }
@@ -252,28 +256,20 @@ export const useWaitingListCart = (eventId: string) => {
     return null;
   };
 
-  // Initialize on mount
+  // Initialize on mount - load cart first, then check waiting list
   useEffect(() => {
     const initializeCart = async () => {
-      await checkWaitingListStatus();
+      // First, try to load cart from localStorage immediately
+      const cartLoaded = loadCartFromStorage();
+      console.log('Cart loaded from storage:', cartLoaded);
       
-      // If no waiting list entry, try to restore from localStorage anyway (for persistence)
-      if (!waitingListEntry) {
-        const userId = getCurrentUserId();
-        const savedCart = localStorage.getItem(`cart-${userId}-${eventId}`);
-        if (savedCart && cartItems.length === 0) {
-          try {
-            const cartData = JSON.parse(savedCart);
-            console.log('Restoring cart from localStorage on init:', cartData);
-            setCartItems(cartData);
-          } catch (error) {
-            console.error('Error parsing saved cart on init:', error);
-          }
-        }
-      }
+      // Then check waiting list status
+      await checkWaitingListStatus();
     };
     
-    initializeCart();
+    if (eventId) {
+      initializeCart();
+    }
   }, [eventId, user?.id]);
 
   // Set up real-time subscription for waiting list updates

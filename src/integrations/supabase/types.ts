@@ -408,29 +408,38 @@ export type Database = {
         Row: {
           created_at: string | null
           event_id: string
+          guest_id: string | null
           id: string
           offer_expires_at: number | null
+          queue_position: number | null
           status: string
           updated_at: string | null
-          user_id: string
+          user_id: string | null
+          user_type: string
         }
         Insert: {
           created_at?: string | null
           event_id: string
+          guest_id?: string | null
           id?: string
           offer_expires_at?: number | null
+          queue_position?: number | null
           status: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
+          user_type?: string
         }
         Update: {
           created_at?: string | null
           event_id?: string
+          guest_id?: string | null
           id?: string
           offer_expires_at?: number | null
+          queue_position?: number | null
           status?: string
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
+          user_type?: string
         }
         Relationships: [
           {
@@ -517,6 +526,19 @@ export type Database = {
       join_waiting_list: {
         Args: { event_uuid: string; user_uuid?: string }
         Returns: Json
+      }
+      join_waiting_list_unified: {
+        Args: {
+          event_uuid: string
+          user_uuid?: string
+          guest_session_id?: string
+        }
+        Returns: {
+          id: string
+          queue_position: number
+          status: string
+          created_at: string
+        }[]
       }
       process_queue: {
         Args: { event_uuid: string }
