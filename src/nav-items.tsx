@@ -15,7 +15,6 @@ import PaymentStatus from '@/pages/PaymentStatus';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import NotFound from '@/pages/NotFound';
-import EventDetails from '@/pages/EventDetails';
 
 export const navItems = [
   {
@@ -73,10 +72,6 @@ export const navItems = [
   {
     to: "/reset-password",
     page: <ResetPassword />,
-  },
-  {
-    to: "/event/:id",
-    page: <EventDetails />,
   },
   {
     to: "*",
