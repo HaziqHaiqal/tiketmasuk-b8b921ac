@@ -55,7 +55,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   if (getTotalItems() === 0 || hideTimer) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed bottom-4 right-4 z-50 mb-20">
       <div className={`bg-white border border-gray-200 rounded-lg shadow-lg transition-all duration-300 ${
         isMinimized ? 'w-12 h-12' : 'w-80'
       }`}>

@@ -154,8 +154,12 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) =>
           <Card key={product.id} className="overflow-hidden">
             <CardHeader className="pb-3">
               <div className="flex items-start space-x-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Icon className="w-5 h-5 text-blue-600" />
+                <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="flex-1">
                   <CardTitle className="text-base">{product.name}</CardTitle>
