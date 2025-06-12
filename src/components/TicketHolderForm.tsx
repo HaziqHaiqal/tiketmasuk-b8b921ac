@@ -9,7 +9,6 @@ import { User } from 'lucide-react';
 interface TicketHolderFormProps {
   ticketIndex: number;
   ticketType: string;
-  formData: any;
   register: any;
   setValue: any;
   errors: any;
