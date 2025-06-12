@@ -18,7 +18,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          clearCart();
+          clearCart(eventId, navigate);
           return 0;
         }
         return prev - 1;
@@ -26,7 +26,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [clearCart]);
+  }, [clearCart, navigate, eventId]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -40,7 +40,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   };
 
   const handleRemove = () => {
-    clearCart();
+    clearCart(eventId, navigate);
   };
 
   const handleView = () => {

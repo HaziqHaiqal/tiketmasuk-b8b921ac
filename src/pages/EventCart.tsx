@@ -21,8 +21,7 @@ const EventCart = () => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          clearCart();
-          navigate(`/event/${id}`);
+          clearCart(id, navigate);
           return 0;
         }
         return prev - 1;

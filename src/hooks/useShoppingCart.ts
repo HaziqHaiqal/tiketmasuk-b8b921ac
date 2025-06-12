@@ -95,12 +95,17 @@ export const useShoppingCart = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const clearCart = () => {
+  const clearCart = (eventId?: string, navigate?: (path: string) => void) => {
     setCartItems([]);
     globalCartState = [];
     localStorage.removeItem('shopping-cart');
     console.log('Cart cleared');
     toast.success('Cart cleared');
+    
+    // Navigate to event page if eventId and navigate function are provided
+    if (eventId && navigate) {
+      navigate(`/event/${eventId}`);
+    }
   };
 
   return {
