@@ -52,12 +52,19 @@ export const useTicketReservation = (eventId?: string) => {
       console.log('Reservation check result:', data);
 
       if (data) {
-        // Add default quantity for UI compatibility and ensure proper timestamp handling
+        // Ensure proper timestamp handling - convert to milliseconds if needed
+        let expiresAt = data.offer_expires_at;
+        if (expiresAt && typeof expiresAt === 'string') {
+          expiresAt = new Date(expiresAt).getTime();
+        }
+        
         const entryWithQuantity = { 
           ...data, 
           quantity: 1,
-          offer_expires_at: data.offer_expires_at 
+          offer_expires_at: expiresAt
         } as WaitingListEntry;
+        
+        console.log('Setting reservation with processed expires_at:', entryWithQuantity);
         setReservation(entryWithQuantity);
       } else {
         setReservation(null);

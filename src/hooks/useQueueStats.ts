@@ -27,51 +27,48 @@ export const useQueueStats = (eventId?: string) => {
     try {
       console.log('Fetching queue stats for event:', eventId);
       
-      // Get comprehensive queue statistics
-      const { data, error } = await supabase.rpc('get_queue_stats', {
-        event_uuid: eventId
-      });
+      // Get current timestamp in milliseconds
+      const nowMs = Date.now();
+      
+      // Get waiting list data for this event
+      const { data: waitingListData, error: waitingError } = await supabase
+        .from('waiting_list')
+        .select('status, offer_expires_at')
+        .eq('event_id', eventId);
 
-      if (error) {
-        console.error('Error fetching queue stats:', error);
+      if (waitingError) {
+        console.error('Error fetching waiting list data:', waitingError);
         return;
       }
 
-      console.log('Queue stats response:', data);
+      console.log('Waiting list data:', waitingListData);
 
-      if (data && data.length > 0) {
-        const stats = data[0];
+      if (waitingListData) {
+        // Count people currently waiting
+        const totalWaiting = waitingListData.filter(entry => entry.status === 'waiting').length;
         
-        // Also get additional stats for active offers and total people in system
-        const { data: waitingListData, error: waitingError } = await supabase
-          .from('waiting_list')
-          .select('status')
-          .eq('event_id', eventId);
+        // Count active offers (not expired)
+        const activeOffers = waitingListData.filter(entry => 
+          entry.status === 'offered' && 
+          (!entry.offer_expires_at || entry.offer_expires_at > nowMs)
+        ).length;
+        
+        // Total people in system (waiting + active offers)
+        const totalInSystem = totalWaiting + activeOffers;
 
-        if (!waitingError && waitingListData) {
-          const activeOffers = waitingListData.filter(entry => entry.status === 'offered').length;
-          const totalInSystem = waitingListData.filter(entry => 
-            entry.status === 'waiting' || entry.status === 'offered'
-          ).length;
+        console.log('Queue stats calculated:', { 
+          totalWaiting, 
+          activeOffers, 
+          totalInSystem 
+        });
 
-          console.log('Additional stats:', { activeOffers, totalInSystem });
-
-          setQueueStats({
-            totalWaiting: stats.total_waiting || 0,
-            currentPosition: stats.current_position || 0,
-            userInQueue: stats.user_in_queue || false,
-            totalActiveOffers: activeOffers,
-            totalInSystem: totalInSystem
-          });
-        } else {
-          setQueueStats({
-            totalWaiting: stats.total_waiting || 0,
-            currentPosition: stats.current_position || 0,
-            userInQueue: stats.user_in_queue || false,
-            totalActiveOffers: 0,
-            totalInSystem: stats.total_waiting || 0
-          });
-        }
+        setQueueStats({
+          totalWaiting,
+          currentPosition: 0, // This would need user context to calculate
+          userInQueue: false, // This would need user context to determine
+          totalActiveOffers: activeOffers,
+          totalInSystem
+        });
       }
     } catch (error) {
       console.error('Error in fetchQueueStats:', error);

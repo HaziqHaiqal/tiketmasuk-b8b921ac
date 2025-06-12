@@ -23,12 +23,21 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     console.log('CartTimerBar reservation:', reservation);
     console.log('CartTimerBar queueStats:', queueStats);
     
+    let timer: NodeJS.Timeout;
+    
     if (reservation && reservation.offer_expires_at) {
+      console.log('Setting up timer with reservation expiry:', reservation.offer_expires_at);
+      
       const updateTimer = () => {
         const now = Date.now();
-        const expirationTime = typeof reservation.offer_expires_at === 'number' 
-          ? reservation.offer_expires_at 
-          : new Date(reservation.offer_expires_at).getTime();
+        let expirationTime: number;
+        
+        // Handle both timestamp formats
+        if (typeof reservation.offer_expires_at === 'number') {
+          expirationTime = reservation.offer_expires_at;
+        } else {
+          expirationTime = new Date(reservation.offer_expires_at).getTime();
+        }
         
         const difference = expirationTime - now;
         console.log('Timer calculation:', { now, expirationTime, difference });
@@ -36,6 +45,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
         if (difference > 0) {
           setTimeLeft(Math.floor(difference / 1000));
         } else {
+          console.log('Timer expired, clearing cart');
           setTimeLeft(0);
           clearCart(eventId, navigate);
         }
@@ -44,27 +54,32 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
       // Update immediately
       updateTimer();
 
-      // Set up interval
-      const timer = setInterval(updateTimer, 1000);
-      return () => clearInterval(timer);
+      // Set up interval to update every second
+      timer = setInterval(updateTimer, 1000);
     } else {
       // Fallback to 20 minute timer if no reservation data
       console.log('Using fallback timer - no reservation data');
-      const fallbackTime = 20 * 60; // 20 minutes
+      const fallbackTime = 20 * 60; // 20 minutes in seconds
       setTimeLeft(fallbackTime);
       
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
+            console.log('Fallback timer expired, clearing cart');
             clearCart(eventId, navigate);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-      return () => clearInterval(timer);
     }
-  }, [reservation, clearCart, navigate, eventId]);
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [reservation?.offer_expires_at, clearCart, navigate, eventId]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -100,11 +115,19 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
                 Time remaining: {formatTime(timeLeft)}
               </span>
             </div>
-            {queueStats.totalWaiting > 0 && (
+            {queueStats.totalInSystem > 0 && (
               <div className="flex items-center space-x-2 bg-orange-700 px-3 py-1 rounded-full">
                 <Users className="w-4 h-4" />
                 <span className="text-sm font-medium">
-                  {queueStats.totalWaiting} people in queue
+                  {queueStats.totalInSystem} people in system
+                </span>
+              </div>
+            )}
+            {queueStats.totalWaiting > 0 && (
+              <div className="flex items-center space-x-2 bg-red-600 px-3 py-1 rounded-full">
+                <Users className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {queueStats.totalWaiting} waiting in queue
                 </span>
               </div>
             )}
