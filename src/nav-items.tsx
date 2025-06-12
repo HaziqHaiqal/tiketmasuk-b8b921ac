@@ -14,6 +14,8 @@ import QRScanner from '@/pages/QRScanner';
 import PaymentStatus from '@/pages/PaymentStatus';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import TermsAndConditions from '@/pages/TermsAndConditions';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import NotFound from '@/pages/NotFound';
 
 export const navItems = [
@@ -72,6 +74,14 @@ export const navItems = [
   {
     to: "/reset-password",
     page: <ResetPassword />,
+  },
+  {
+    to: "/terms-and-conditions",
+    page: <TermsAndConditions />,
+  },
+  {
+    to: "/privacy-policy",
+    page: <PrivacyPolicy />,
   },
   {
     to: "*",

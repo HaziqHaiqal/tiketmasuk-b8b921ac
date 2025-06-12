@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Clock, X } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
@@ -11,8 +11,13 @@ interface CartTimerBarProps {
 
 const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { getTotalItems, clearCart } = useShoppingCart();
   const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes in seconds
+
+  // Don't show timer on purchase flow pages
+  const isPurchaseFlow = location.pathname.includes('/complete-purchase') || 
+                        location.pathname.includes('/order-summary');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,7 +52,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     navigate(`/event/${eventId}/cart`);
   };
 
-  if (getTotalItems() === 0) return null;
+  if (getTotalItems() === 0 || isPurchaseFlow) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-orange-600 text-white p-4 shadow-lg z-50">
