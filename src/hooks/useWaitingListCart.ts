@@ -106,9 +106,9 @@ export const useWaitingListCart = (eventId: string) => {
 
       console.log('Join waiting list response:', data);
 
-      // Handle the response properly
+      // Handle the response properly with correct type conversion
       if (data && typeof data === 'object') {
-        const response = data as WaitingListResponse;
+        const response = data as unknown as WaitingListResponse;
         
         if (response.success) {
           // Add item to cart
