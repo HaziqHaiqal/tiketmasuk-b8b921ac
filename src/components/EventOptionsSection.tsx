@@ -3,43 +3,97 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShoppingBag, Plus, Minus } from 'lucide-react';
 import { useProducts } from '@/hooks/useProducts';
-import { useShoppingCart } from '@/hooks/useShoppingCart';
 
 interface EventOptionsSectionProps {
   eventId: string;
+  ticketHolderIndex?: number;
+  onOptionsChange?: (options: any) => void;
 }
 
-const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) => {
+const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ 
+  eventId, 
+  ticketHolderIndex, 
+  onOptionsChange 
+}) => {
   const { data: products, isLoading } = useProducts();
-  const { addToCart } = useShoppingCart();
-  const [selectedProducts, setSelectedProducts] = React.useState<Record<string, number>>({});
+  const [selectedOptions, setSelectedOptions] = React.useState<Record<string, any>>({});
 
   // Filter products for this specific event
   const eventProducts = products?.filter(product => product.event_id === eventId) || [];
 
-  const updateProductQuantity = (productId: string, change: number) => {
-    setSelectedProducts(prev => {
-      const currentQuantity = prev[productId] || 0;
-      const newQuantity = Math.max(0, currentQuantity + change);
-      return { ...prev, [productId]: newQuantity };
-    });
+  const updateProductOption = (productId: string, field: string, value: any) => {
+    const newOptions = {
+      ...selectedOptions,
+      [productId]: {
+        ...selectedOptions[productId],
+        [field]: value
+      }
+    };
+    setSelectedOptions(newOptions);
+    
+    // Notify parent component of changes
+    if (onOptionsChange) {
+      onOptionsChange(newOptions);
+    }
   };
 
-  const handleAddToCart = (product: any) => {
-    const quantity = selectedProducts[product.id] || 1;
-    addToCart({
-      id: `product-${product.id}-${Date.now()}`,
-      title: product.title,
-      price: product.price,
-      image: product.image || '/placeholder.svg',
-      eventId: eventId,
-      ticketType: 'product'
-    }, quantity);
+  const getProductOption = (productId: string, field: string) => {
+    return selectedOptions[productId]?.[field] || '';
+  };
+
+  const getVariantTypes = (product: any) => {
+    if (!product.variants?.options) return [];
+    return Object.keys(product.variants.options);
+  };
+
+  const getVariantValues = (product: any, variantType: string) => {
+    if (!product.variants?.options) return [];
+    return product.variants.options[variantType] || [];
+  };
+
+  const getCurrentStock = (product: any) => {
+    const variantTypes = getVariantTypes(product);
+    if (!product.variants?.stock || variantTypes.length === 0) {
+      return product.in_stock ? 999 : 0;
+    }
     
-    // Reset quantity after adding
-    setSelectedProducts(prev => ({ ...prev, [product.id]: 0 }));
+    const variantKey = variantTypes.map(type => 
+      getProductOption(product.id, `variant_${type}`)
+    ).join('-');
+    
+    return product.variants.stock[variantKey] || 0;
+  };
+
+  const getPriceAdjustment = (product: any) => {
+    const variantTypes = getVariantTypes(product);
+    if (!product.variants?.pricing || variantTypes.length === 0) return 0;
+    
+    const variantKey = variantTypes.map(type => 
+      getProductOption(product.id, `variant_${type}`)
+    ).join('-');
+    
+    return product.variants.pricing[variantKey] || 0;
+  };
+
+  const calculateProductTotal = (product: any) => {
+    const quantity = getProductOption(product.id, 'quantity') || 0;
+    const priceAdjustment = getPriceAdjustment(product);
+    return (product.price + priceAdjustment) * quantity;
+  };
+
+  const canSelectProduct = (product: any) => {
+    const variantTypes = getVariantTypes(product);
+    if (variantTypes.length === 0) return product.in_stock;
+    
+    // Check if all variant types have been selected
+    const allSelected = variantTypes.every(type => 
+      getProductOption(product.id, `variant_${type}`)
+    );
+    
+    return allSelected && getCurrentStock(product) > 0;
   };
 
   if (isLoading) {
@@ -59,7 +113,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) =>
   }
 
   if (eventProducts.length === 0) {
-    return null; // Don't show the section if no products
+    return null;
   }
 
   return (
@@ -69,33 +123,44 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) =>
           <ShoppingBag className="w-5 h-5 mr-2" />
           Event Options
         </CardTitle>
-        <p className="text-gray-600">Add merchandise and products to your order</p>
+        <p className="text-gray-600">Select merchandise and products for this ticket</p>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {eventProducts.map((product) => (
-            <div key={product.id} className="border rounded-lg p-4">
-              <div className="flex items-start space-x-4">
-                <img
-                  src={product.image || '/placeholder.svg'}
-                  alt={product.title}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
+        <div className="space-y-6">
+          {eventProducts.map((product) => {
+            const variantTypes = getVariantTypes(product);
+            const currentStock = getCurrentStock(product);
+            const priceAdjustment = getPriceAdjustment(product);
+            const quantity = getProductOption(product.id, 'quantity') || 0;
+            const productTotal = calculateProductTotal(product);
+
+            return (
+              <div key={product.id} className="border rounded-lg p-4">
+                <div className="flex items-start space-x-4">
+                  <img
+                    src={product.image || '/placeholder.svg'}
+                    alt={product.title}
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
+                  <div className="flex-1 space-y-4">
                     <div>
                       <h3 className="font-semibold">{product.title}</h3>
                       <p className="text-gray-600 text-sm">{product.description}</p>
                       <div className="flex items-center space-x-2 mt-2">
                         <span className="text-lg font-bold text-green-600">
-                          RM {product.price}
+                          RM {product.price.toFixed(2)}
+                          {priceAdjustment > 0 && (
+                            <span className="text-sm text-gray-600">
+                              {' '}+ RM{priceAdjustment.toFixed(2)}
+                            </span>
+                          )}
                         </span>
                         <Badge variant="outline" className="text-xs">
                           {product.category}
                         </Badge>
-                        {product.in_stock ? (
+                        {currentStock > 0 ? (
                           <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                            In Stock
+                            {currentStock} in Stock
                           </Badge>
                         ) : (
                           <Badge variant="destructive" className="text-xs">
@@ -104,39 +169,83 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) =>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateProductQuantity(product.id, -1)}
-                        disabled={!product.in_stock || (selectedProducts[product.id] || 0) === 0}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">
-                        {selectedProducts[product.id] || 0}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateProductQuantity(product.id, 1)}
-                        disabled={!product.in_stock}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        onClick={() => handleAddToCart(product)}
-                        disabled={!product.in_stock || (selectedProducts[product.id] || 0) === 0}
-                        size="sm"
-                      >
-                        Add to Cart
-                      </Button>
-                    </div>
+
+                    {/* Variant Selection */}
+                    {variantTypes.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {variantTypes.map((variantType) => (
+                          <div key={variantType}>
+                            <label className="text-sm font-medium text-gray-700 mb-1 block">
+                              {variantType}
+                            </label>
+                            <Select
+                              value={getProductOption(product.id, `variant_${variantType}`)}
+                              onValueChange={(value) => 
+                                updateProductOption(product.id, `variant_${variantType}`, value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Select ${variantType.toLowerCase()}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {getVariantValues(product, variantType).map((value) => (
+                                  <SelectItem key={value} value={value}>
+                                    {value}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Quantity Selection */}
+                    {(variantTypes.length === 0 || canSelectProduct(product)) && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-medium">Quantity:</span>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateProductOption(product.id, 'quantity', Math.max(0, quantity - 1))}
+                              disabled={quantity === 0}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </Button>
+                            <span className="w-8 text-center font-medium">{quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => updateProductOption(product.id, 'quantity', quantity + 1)}
+                              disabled={currentStock === 0 || quantity >= currentStock}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        {quantity > 0 && (
+                          <div className="text-right">
+                            <span className="text-lg font-bold text-blue-600">
+                              RM {productTotal.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Variant selection requirement notice */}
+                    {variantTypes.length > 0 && !canSelectProduct(product) && currentStock > 0 && (
+                      <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+                        Please select all options to choose quantity
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
