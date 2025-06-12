@@ -450,7 +450,9 @@ export type Database = {
         Returns: boolean
       }
       join_waiting_list: {
-        Args: { event_uuid: string; user_uuid?: string }
+        Args:
+          | { event_uuid: string; user_uuid?: string }
+          | { event_uuid: string; user_uuid?: string }
         Returns: Json
       }
       process_queue: {

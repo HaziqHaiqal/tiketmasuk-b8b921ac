@@ -74,7 +74,8 @@ export const useTicketReservation = (eventId?: string) => {
         return false;
       }
 
-      const response = data as JoinWaitingListResponse;
+      // Safely cast the Json response to our interface
+      const response = data as unknown as JoinWaitingListResponse;
       
       if (response?.success) {
         if (response.status === 'offered') {
