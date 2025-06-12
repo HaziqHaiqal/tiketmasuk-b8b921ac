@@ -6,13 +6,17 @@ interface QueueStats {
   totalWaiting: number;
   currentPosition: number;
   userInQueue: boolean;
+  totalActiveOffers: number;
+  totalInSystem: number;
 }
 
 export const useQueueStats = (eventId?: string) => {
   const [queueStats, setQueueStats] = useState<QueueStats>({
     totalWaiting: 0,
     currentPosition: 0,
-    userInQueue: false
+    userInQueue: false,
+    totalActiveOffers: 0,
+    totalInSystem: 0
   });
   const [loading, setLoading] = useState(false);
 
@@ -21,6 +25,9 @@ export const useQueueStats = (eventId?: string) => {
 
     setLoading(true);
     try {
+      console.log('Fetching queue stats for event:', eventId);
+      
+      // Get comprehensive queue statistics
       const { data, error } = await supabase.rpc('get_queue_stats', {
         event_uuid: eventId
       });
@@ -30,13 +37,41 @@ export const useQueueStats = (eventId?: string) => {
         return;
       }
 
+      console.log('Queue stats response:', data);
+
       if (data && data.length > 0) {
         const stats = data[0];
-        setQueueStats({
-          totalWaiting: stats.total_waiting,
-          currentPosition: stats.current_position,
-          userInQueue: stats.user_in_queue
-        });
+        
+        // Also get additional stats for active offers and total people in system
+        const { data: waitingListData, error: waitingError } = await supabase
+          .from('waiting_list')
+          .select('status')
+          .eq('event_id', eventId);
+
+        if (!waitingError && waitingListData) {
+          const activeOffers = waitingListData.filter(entry => entry.status === 'offered').length;
+          const totalInSystem = waitingListData.filter(entry => 
+            entry.status === 'waiting' || entry.status === 'offered'
+          ).length;
+
+          console.log('Additional stats:', { activeOffers, totalInSystem });
+
+          setQueueStats({
+            totalWaiting: stats.total_waiting || 0,
+            currentPosition: stats.current_position || 0,
+            userInQueue: stats.user_in_queue || false,
+            totalActiveOffers: activeOffers,
+            totalInSystem: totalInSystem
+          });
+        } else {
+          setQueueStats({
+            totalWaiting: stats.total_waiting || 0,
+            currentPosition: stats.current_position || 0,
+            userInQueue: stats.user_in_queue || false,
+            totalActiveOffers: 0,
+            totalInSystem: stats.total_waiting || 0
+          });
+        }
       }
     } catch (error) {
       console.error('Error in fetchQueueStats:', error);
@@ -55,6 +90,8 @@ export const useQueueStats = (eventId?: string) => {
   useEffect(() => {
     if (!eventId) return;
 
+    console.log('Setting up real-time subscription for event:', eventId);
+
     const subscription = supabase
       .channel(`queue_${eventId}`)
       .on(
@@ -65,13 +102,15 @@ export const useQueueStats = (eventId?: string) => {
           table: 'waiting_list',
           filter: `event_id=eq.${eventId}`
         },
-        () => {
+        (payload) => {
+          console.log('Real-time queue update:', payload);
           fetchQueueStats();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up subscription');
       subscription.unsubscribe();
     };
   }, [eventId]);

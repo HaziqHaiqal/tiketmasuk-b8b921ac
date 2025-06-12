@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Clock, X } from 'lucide-react';
+import { Clock, X, Users } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { useTicketReservation } from '@/hooks/useTicketReservation';
+import { useQueueStats } from '@/hooks/useQueueStats';
 
 interface CartTimerBarProps {
   eventId: string;
@@ -15,13 +16,22 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const location = useLocation();
   const { getTotalItems, clearCart } = useShoppingCart();
   const { reservation } = useTicketReservation(eventId);
+  const { queueStats } = useQueueStats(eventId);
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
+    console.log('CartTimerBar reservation:', reservation);
+    console.log('CartTimerBar queueStats:', queueStats);
+    
     if (reservation && reservation.offer_expires_at) {
       const updateTimer = () => {
         const now = Date.now();
-        const difference = reservation.offer_expires_at - now;
+        const expirationTime = typeof reservation.offer_expires_at === 'number' 
+          ? reservation.offer_expires_at 
+          : new Date(reservation.offer_expires_at).getTime();
+        
+        const difference = expirationTime - now;
+        console.log('Timer calculation:', { now, expirationTime, difference });
         
         if (difference > 0) {
           setTimeLeft(Math.floor(difference / 1000));
@@ -39,7 +49,10 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
       return () => clearInterval(timer);
     } else {
       // Fallback to 20 minute timer if no reservation data
-      setTimeLeft(20 * 60);
+      console.log('Using fallback timer - no reservation data');
+      const fallbackTime = 20 * 60; // 20 minutes
+      setTimeLeft(fallbackTime);
+      
       const timer = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -80,11 +93,21 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-orange-600 text-white p-4 shadow-lg z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Clock className="w-5 h-5" />
-            <span className="font-medium">
-              There are items in your cart. Time remaining {formatTime(timeLeft)}
-            </span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-5 h-5" />
+              <span className="font-medium">
+                Time remaining: {formatTime(timeLeft)}
+              </span>
+            </div>
+            {queueStats.totalWaiting > 0 && (
+              <div className="flex items-center space-x-2 bg-orange-700 px-3 py-1 rounded-full">
+                <Users className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {queueStats.totalWaiting} people in queue
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center space-x-3">
             <Button 
