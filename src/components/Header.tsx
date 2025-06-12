@@ -2,8 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Menu, X, User, Calendar, MapPin } from 'lucide-react';
+import { Menu, X, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const Header = () => {
@@ -23,33 +22,18 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Calendar className="w-8 h-8 text-blue-600" />
-            <span className="text-xl font-bold text-gray-900">EventHub</span>
+            <span className="text-xl font-bold text-gray-900">Tiketmasuk</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link to="/events" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Browse Events
-            </Link>
-            <Link to="/create-event" className="text-gray-700 hover:text-blue-600 transition-colors">
-              Create Event
+              Events
             </Link>
             <Link to="/organizers" className="text-gray-700 hover:text-blue-600 transition-colors">
               Organizers
             </Link>
           </nav>
-
-          {/* Search Bar - Desktop */}
-          <div className="hidden md:flex items-center space-x-4 flex-1 max-w-lg mx-8">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search events..."
-                className="pl-10 pr-4 py-2 w-full"
-              />
-            </div>
-          </div>
 
           {/* User Menu - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
@@ -85,16 +69,6 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t">
             <div className="space-y-4">
-              {/* Mobile Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  type="text"
-                  placeholder="Search events..."
-                  className="pl-10 pr-4 py-2 w-full"
-                />
-              </div>
-
               {/* Mobile Navigation */}
               <nav className="space-y-2">
                 <Link
@@ -102,14 +76,7 @@ const Header = () => {
                   className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Browse Events
-                </Link>
-                <Link
-                  to="/create-event"
-                  className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Create Event
+                  Events
                 </Link>
                 <Link
                   to="/organizers"
