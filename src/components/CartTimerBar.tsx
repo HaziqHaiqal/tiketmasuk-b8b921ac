@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Clock, X, Users } from 'lucide-react';
-import { useShoppingCart } from '@/hooks/useShoppingCart';
-import { useTicketReservation } from '@/hooks/useTicketReservation';
+import { useWaitingListCart } from '@/hooks/useWaitingListCart';
 import { useQueueStats } from '@/hooks/useQueueStats';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -16,33 +15,23 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { getTotalItems, clearCart, getSessionExpiryTime } = useShoppingCart();
-  const { reservation } = useTicketReservation(eventId);
+  const { getTotalItems, clearCart, getExpiryTime, waitingListEntry } = useWaitingListCart(eventId);
   const { queueStats } = useQueueStats(eventId);
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
     console.log('CartTimerBar - User:', !!user);
-    console.log('CartTimerBar - Reservation:', reservation);
+    console.log('CartTimerBar - Waiting list entry:', waitingListEntry);
     console.log('CartTimerBar - Queue stats:', queueStats);
     
     let timer: NodeJS.Timeout;
-    let expirationTime: number | null = null;
     
-    if (user && reservation?.offer_expires_at && reservation.status === 'offered') {
-      // Authenticated user with active reservation
-      expirationTime = reservation.offer_expires_at;
-      console.log('Using reservation expiry time:', expirationTime);
-    } else if (!user && getTotalItems() > 0) {
-      // Guest user with items in cart
-      expirationTime = getSessionExpiryTime();
-      console.log('Using session expiry time:', expirationTime);
-    }
+    const expirationTime = getExpiryTime();
     
     if (expirationTime && getTotalItems() > 0) {
       const updateTimer = () => {
         const now = Date.now();
-        const difference = expirationTime! - now;
+        const difference = expirationTime - now;
         
         console.log('Timer update:', { 
           now, 
@@ -56,7 +45,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
         } else {
           console.log('Timer expired, clearing cart and redirecting');
           setTimeLeft(0);
-          clearCart(eventId, navigate);
+          clearCart(navigate);
         }
       };
 
@@ -76,13 +65,12 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     };
   }, [
     user, 
-    reservation?.offer_expires_at, 
-    reservation?.status, 
+    waitingListEntry?.offer_expires_at, 
+    waitingListEntry?.status,
     getTotalItems(), 
-    getSessionExpiryTime(),
+    getExpiryTime,
     clearCart, 
-    navigate, 
-    eventId
+    navigate
   ]);
 
   const formatTime = (seconds: number) => {
@@ -97,7 +85,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   };
 
   const handleRemove = () => {
-    clearCart(eventId, navigate);
+    clearCart(navigate);
   };
 
   const handleView = () => {
@@ -109,22 +97,48 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   // Don't show if no items in cart
   if (getTotalItems() === 0) return null;
 
+  // Show different content based on waiting list status
+  const getStatusInfo = () => {
+    if (!waitingListEntry) return null;
+
+    if (waitingListEntry.status === 'offered') {
+      return (
+        <div className="flex items-center space-x-2">
+          <Clock className="w-5 h-5" />
+          <span className="font-medium">
+            Time remaining: {formatTime(timeLeft)}
+          </span>
+        </div>
+      );
+    }
+
+    if (waitingListEntry.status === 'waiting') {
+      return (
+        <div className="flex items-center space-x-2">
+          <Users className="w-5 h-5" />
+          <span className="font-medium">
+            In waiting list - you'll be notified when tickets are available
+          </span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-orange-600 text-white p-4 shadow-lg z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-5 h-5" />
-              <span className="font-medium">
-                Time remaining: {formatTime(timeLeft)}
-              </span>
-            </div>
+            {getStatusInfo()}
+            
             {!user && (
               <div className="flex items-center space-x-2 bg-blue-600 px-3 py-1 rounded-full">
                 <span className="text-sm font-medium">Guest Session</span>
               </div>
             )}
+            
             {queueStats.totalInSystem > 0 && (
               <div className="flex items-center space-x-2 bg-orange-700 px-3 py-1 rounded-full">
                 <Users className="w-4 h-4" />
@@ -133,6 +147,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
                 </span>
               </div>
             )}
+            
             {queueStats.totalWaiting > 0 && (
               <div className="flex items-center space-x-2 bg-red-600 px-3 py-1 rounded-full">
                 <Users className="w-4 h-4" />
@@ -142,6 +157,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
               </div>
             )}
           </div>
+          
           <div className="flex items-center space-x-3">
             <Button 
               variant="outline" 

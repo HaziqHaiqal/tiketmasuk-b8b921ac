@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Clock, Minus, Plus, Trash2 } from 'lucide-react';
-import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { useWaitingListCart } from '@/hooks/useWaitingListCart';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
 
@@ -13,7 +13,15 @@ const EventCart = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cartItems, updateQuantity, removeFromCart, getTotalPrice, clearCart, getSessionExpiryTime } = useShoppingCart();
+  const { 
+    cartItems, 
+    waitingListEntry, 
+    updateQuantity, 
+    removeFromCart, 
+    getTotalPrice, 
+    clearCart, 
+    getExpiryTime 
+  } = useWaitingListCart(id!);
   const [timeLeft, setTimeLeft] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -21,7 +29,7 @@ const EventCart = () => {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
-    const expiryTime = getSessionExpiryTime();
+    const expiryTime = getExpiryTime();
     
     if (expiryTime && cartItems.length > 0) {
       const updateTimer = () => {
@@ -32,7 +40,7 @@ const EventCart = () => {
           setTimeLeft(Math.floor(difference / 1000));
         } else {
           setTimeLeft(0);
-          clearCart(id, navigate);
+          clearCart(navigate);
         }
       };
       
@@ -45,7 +53,7 @@ const EventCart = () => {
         clearInterval(timer);
       }
     };
-  }, [cartItems.length, getSessionExpiryTime, clearCart, navigate, id]);
+  }, [cartItems.length, getExpiryTime, clearCart, navigate]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -69,6 +77,35 @@ const EventCart = () => {
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
     navigate(`/event/${id}/complete-purchase`);
+  };
+
+  // Show waiting list status
+  const getStatusContent = () => {
+    if (!waitingListEntry) return null;
+
+    if (waitingListEntry.status === 'waiting') {
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-blue-800 mb-2">You're in the waiting list</h3>
+          <p className="text-blue-600">
+            You'll be notified when tickets become available. Keep this page open to be ready when your turn comes!
+          </p>
+        </div>
+      );
+    }
+
+    if (waitingListEntry.status === 'offered' && timeLeft > 0) {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-green-800 mb-2">Tickets offered!</h3>
+          <p className="text-green-600">
+            You have {formatTime(timeLeft)} to complete your purchase before the offer expires.
+          </p>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   if (cartItems.length === 0) {
@@ -104,15 +141,19 @@ const EventCart = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Event
             </Button>
-            <div className="flex items-center space-x-2 text-orange-600">
-              <Clock className="w-5 h-5" />
-              <span className="font-semibold">Time remaining: {formatTime(timeLeft)}</span>
-            </div>
+            {waitingListEntry?.status === 'offered' && timeLeft > 0 && (
+              <div className="flex items-center space-x-2 text-orange-600">
+                <Clock className="w-5 h-5" />
+                <span className="font-semibold">Time remaining: {formatTime(timeLeft)}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {getStatusContent()}
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2">
@@ -207,11 +248,15 @@ const EventCart = () => {
                     onClick={handleProceed}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     size="lg"
+                    disabled={waitingListEntry?.status !== 'offered'}
                   >
-                    {user ? 'Proceed to Checkout' : 'Continue as Guest or Login'}
+                    {waitingListEntry?.status === 'offered' 
+                      ? (user ? 'Proceed to Checkout' : 'Continue as Guest or Login')
+                      : 'Waiting for ticket offer...'
+                    }
                   </Button>
 
-                  {!user && (
+                  {!user && waitingListEntry?.status === 'offered' && (
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-2">
                         Have an account? Sign in for faster checkout
