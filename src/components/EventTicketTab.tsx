@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,23 +73,30 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
         if (ticket) {
           console.log(`Adding ticket: ${ticket.name}, quantity: ${quantity}`);
           
-          // Create a single cart item with the selected quantity
+          // Create a unique cart item with the selected quantity
           const uniqueId = `${eventId}-${ticketId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          addToCart({
+          const cartItem = {
             id: uniqueId,
             title: `${event.title} - ${ticket.name}`,
             price: ticket.price,
             image: '/placeholder.svg',
             eventId: eventId || '',
             ticketType: ticket.name
-          }, quantity);
+          };
+          
+          console.log('About to add to cart:', cartItem, 'with quantity:', quantity);
+          addToCart(cartItem, quantity);
         }
       }
     });
 
     // Clear selections and navigate to cart
     setSelectedTickets({});
-    navigate(`/event/${eventId}/cart`);
+    
+    // Add a small delay before navigation to ensure cart is updated
+    setTimeout(() => {
+      navigate(`/event/${eventId}/cart`);
+    }, 100);
   };
 
   return (

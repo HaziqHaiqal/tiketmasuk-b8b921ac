@@ -12,38 +12,49 @@ interface CartItem {
   ticketType: string;
 }
 
+// Create a singleton-like state manager to prevent multiple instances
+let globalCartState: CartItem[] = [];
+let isInitialized = false;
+
 export const useShoppingCart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem('shopping-cart');
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        console.log('Loading cart from localStorage:', parsedCart);
-        setCartItems(parsedCart);
-      } catch (error) {
-        console.error('Error parsing cart from localStorage:', error);
-        localStorage.removeItem('shopping-cart');
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    // Only load from localStorage once
+    if (!isInitialized) {
+      const savedCart = localStorage.getItem('shopping-cart');
+      if (savedCart) {
+        try {
+          const parsedCart = JSON.parse(savedCart);
+          console.log('Initial load from localStorage:', parsedCart);
+          globalCartState = parsedCart;
+          isInitialized = true;
+          return parsedCart;
+        } catch (error) {
+          console.error('Error parsing cart from localStorage:', error);
+          localStorage.removeItem('shopping-cart');
+        }
       }
+      isInitialized = true;
     }
-  }, []);
+    return globalCartState;
+  });
 
-  // Save cart to localStorage whenever it changes
+  // Save to localStorage whenever cartItems changes
   useEffect(() => {
-    console.log('Saving cart to localStorage:', cartItems);
-    localStorage.setItem('shopping-cart', JSON.stringify(cartItems));
+    if (cartItems !== globalCartState) {
+      globalCartState = cartItems;
+      console.log('Saving cart to localStorage:', cartItems);
+      localStorage.setItem('shopping-cart', JSON.stringify(cartItems));
+    }
   }, [cartItems]);
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
     console.log('Adding to cart:', product, 'quantity:', quantity);
     
+    const newItem = { ...product, quantity };
+    
     setCartItems(prevItems => {
-      // For tickets, we want to add them as separate items rather than combining
-      const newItem = { ...product, quantity };
       const updatedItems = [...prevItems, newItem];
-      console.log('Added new item to cart:', updatedItems);
+      console.log('Cart updated with new item:', updatedItems);
       return updatedItems;
     });
     
@@ -86,6 +97,7 @@ export const useShoppingCart = () => {
 
   const clearCart = () => {
     setCartItems([]);
+    globalCartState = [];
     localStorage.removeItem('shopping-cart');
     console.log('Cart cleared');
     toast.success('Cart cleared');
