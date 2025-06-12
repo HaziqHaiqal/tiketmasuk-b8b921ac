@@ -12,25 +12,59 @@ interface CartItem {
   ticketType: string;
 }
 
+interface CartSession {
+  sessionId: string;
+  cartItems: CartItem[];
+  createdAt: number;
+  expiresAt: number;
+}
+
+// Generate a unique session ID for guest users
+const generateSessionId = () => {
+  return `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Get or create session ID
+const getSessionId = () => {
+  let sessionId = localStorage.getItem('cart-session-id');
+  if (!sessionId) {
+    sessionId = generateSessionId();
+    localStorage.setItem('cart-session-id', sessionId);
+  }
+  return sessionId;
+};
+
 // Create a singleton-like state manager to prevent multiple instances
 let globalCartState: CartItem[] = [];
+let globalSessionData: CartSession | null = null;
 let isInitialized = false;
 
 export const useShoppingCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     // Only load from localStorage once
     if (!isInitialized) {
-      const savedCart = localStorage.getItem('shopping-cart');
-      if (savedCart) {
+      const sessionId = getSessionId();
+      const savedSession = localStorage.getItem(`cart-session-${sessionId}`);
+      
+      if (savedSession) {
         try {
-          const parsedCart = JSON.parse(savedCart);
-          console.log('Initial load from localStorage:', parsedCart);
-          globalCartState = parsedCart;
-          isInitialized = true;
-          return parsedCart;
+          const sessionData: CartSession = JSON.parse(savedSession);
+          
+          // Check if session hasn't expired
+          if (sessionData.expiresAt > Date.now()) {
+            console.log('Loading cart from session:', sessionData);
+            globalCartState = sessionData.cartItems;
+            globalSessionData = sessionData;
+            isInitialized = true;
+            return sessionData.cartItems;
+          } else {
+            // Session expired, clear it
+            console.log('Cart session expired, clearing');
+            localStorage.removeItem(`cart-session-${sessionId}`);
+          }
         } catch (error) {
-          console.error('Error parsing cart from localStorage:', error);
-          localStorage.removeItem('shopping-cart');
+          console.error('Error parsing cart session:', error);
+          localStorage.removeItem(`cart-session-${sessionId}`);
         }
       }
       isInitialized = true;
@@ -42,8 +76,24 @@ export const useShoppingCart = () => {
   useEffect(() => {
     if (cartItems !== globalCartState) {
       globalCartState = cartItems;
-      console.log('Saving cart to localStorage:', cartItems);
-      localStorage.setItem('shopping-cart', JSON.stringify(cartItems));
+      const sessionId = getSessionId();
+      
+      if (cartItems.length > 0) {
+        const sessionData: CartSession = {
+          sessionId,
+          cartItems,
+          createdAt: globalSessionData?.createdAt || Date.now(),
+          expiresAt: globalSessionData?.expiresAt || (Date.now() + 20 * 60 * 1000) // 20 minutes
+        };
+        
+        globalSessionData = sessionData;
+        console.log('Saving cart session:', sessionData);
+        localStorage.setItem(`cart-session-${sessionId}`, JSON.stringify(sessionData));
+      } else {
+        // Clear session when cart is empty
+        localStorage.removeItem(`cart-session-${sessionId}`);
+        globalSessionData = null;
+      }
     }
   }, [cartItems]);
 
@@ -95,10 +145,18 @@ export const useShoppingCart = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
+  const getSessionExpiryTime = (): number | null => {
+    return globalSessionData?.expiresAt || null;
+  };
+
   const clearCart = (eventId?: string, navigate?: (path: string) => void) => {
     setCartItems([]);
     globalCartState = [];
-    localStorage.removeItem('shopping-cart');
+    globalSessionData = null;
+    
+    const sessionId = getSessionId();
+    localStorage.removeItem(`cart-session-${sessionId}`);
+    
     console.log('Cart cleared');
     toast.success('Cart cleared');
     
@@ -115,6 +173,7 @@ export const useShoppingCart = () => {
     updateQuantity,
     getTotalItems,
     getTotalPrice,
-    clearCart
+    clearCart,
+    getSessionExpiryTime
   };
 };

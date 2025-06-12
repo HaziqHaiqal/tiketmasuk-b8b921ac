@@ -6,6 +6,7 @@ import { Clock, X, Users } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { useTicketReservation } from '@/hooks/useTicketReservation';
 import { useQueueStats } from '@/hooks/useQueueStats';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CartTimerBarProps {
   eventId: string;
@@ -14,26 +15,41 @@ interface CartTimerBarProps {
 const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { getTotalItems, clearCart } = useShoppingCart();
+  const { user } = useAuth();
+  const { getTotalItems, clearCart, getSessionExpiryTime } = useShoppingCart();
   const { reservation } = useTicketReservation(eventId);
   const { queueStats } = useQueueStats(eventId);
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
-    console.log('CartTimerBar - Reservation data:', reservation);
+    console.log('CartTimerBar - User:', !!user);
+    console.log('CartTimerBar - Reservation:', reservation);
     console.log('CartTimerBar - Queue stats:', queueStats);
     
     let timer: NodeJS.Timeout;
+    let expirationTime: number | null = null;
     
-    if (reservation?.offer_expires_at && reservation.status === 'offered') {
-      console.log('Setting up timer with reservation expiry:', reservation.offer_expires_at);
-      
+    if (user && reservation?.offer_expires_at && reservation.status === 'offered') {
+      // Authenticated user with active reservation
+      expirationTime = reservation.offer_expires_at;
+      console.log('Using reservation expiry time:', expirationTime);
+    } else if (!user && getTotalItems() > 0) {
+      // Guest user with items in cart
+      expirationTime = getSessionExpiryTime();
+      console.log('Using session expiry time:', expirationTime);
+    }
+    
+    if (expirationTime && getTotalItems() > 0) {
       const updateTimer = () => {
         const now = Date.now();
-        const expirationTime = reservation.offer_expires_at;
-        const difference = expirationTime - now;
+        const difference = expirationTime! - now;
         
-        console.log('Timer update:', { now, expirationTime, difference, timeLeft: Math.floor(difference / 1000) });
+        console.log('Timer update:', { 
+          now, 
+          expirationTime, 
+          difference, 
+          timeLeft: Math.floor(difference / 1000) 
+        });
         
         if (difference > 0) {
           setTimeLeft(Math.floor(difference / 1000));
@@ -49,22 +65,6 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
 
       // Set up interval to update every second
       timer = setInterval(updateTimer, 1000);
-    } else if (getTotalItems() > 0) {
-      // Fallback timer when we have cart items but no reservation yet
-      console.log('Using fallback timer - cart has items but no reservation');
-      const fallbackTime = 20 * 60; // 20 minutes in seconds
-      setTimeLeft(fallbackTime);
-      
-      timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            console.log('Fallback timer expired, clearing cart');
-            clearCart(eventId, navigate);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
     } else {
       setTimeLeft(0);
     }
@@ -74,7 +74,16 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
         clearInterval(timer);
       }
     };
-  }, [reservation?.offer_expires_at, reservation?.status, getTotalItems(), clearCart, navigate, eventId]);
+  }, [
+    user, 
+    reservation?.offer_expires_at, 
+    reservation?.status, 
+    getTotalItems(), 
+    getSessionExpiryTime(),
+    clearCart, 
+    navigate, 
+    eventId
+  ]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -111,6 +120,11 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
                 Time remaining: {formatTime(timeLeft)}
               </span>
             </div>
+            {!user && (
+              <div className="flex items-center space-x-2 bg-blue-600 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium">Guest Session</span>
+              </div>
+            )}
             {queueStats.totalInSystem > 0 && (
               <div className="flex items-center space-x-2 bg-orange-700 px-3 py-1 rounded-full">
                 <Users className="w-4 h-4" />

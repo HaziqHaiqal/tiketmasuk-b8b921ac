@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,24 +13,39 @@ const EventCart = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cartItems, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useShoppingCart();
-  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes
+  const { cartItems, updateQuantity, removeFromCart, getTotalPrice, clearCart, getSessionExpiryTime } = useShoppingCart();
+  const [timeLeft, setTimeLeft] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
+    let timer: NodeJS.Timeout;
+    
+    const expiryTime = getSessionExpiryTime();
+    
+    if (expiryTime && cartItems.length > 0) {
+      const updateTimer = () => {
+        const now = Date.now();
+        const difference = expiryTime - now;
+        
+        if (difference > 0) {
+          setTimeLeft(Math.floor(difference / 1000));
+        } else {
+          setTimeLeft(0);
           clearCart(id, navigate);
-          return 0;
         }
-        return prev - 1;
-      });
-    }, 1000);
+      };
+      
+      updateTimer();
+      timer = setInterval(updateTimer, 1000);
+    }
 
-    return () => clearInterval(timer);
-  }, [clearCart, navigate, id]);
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [cartItems.length, getSessionExpiryTime, clearCart, navigate, id]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
