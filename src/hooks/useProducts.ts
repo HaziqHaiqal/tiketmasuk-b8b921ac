@@ -10,12 +10,12 @@ export interface Product {
   original_price: number | null;
   image: string | null;
   category: string;
+  category_code: string;
   rating: number | null;
   reviews: number | null;
   in_stock: boolean | null;
   vendor_id: string;
   event_id: string | null;
-  is_required: boolean | null;
   created_at: string;
   updated_at: string;
   variants?: {

@@ -24,9 +24,14 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
   // Filter products for this specific event
   const eventProducts = products?.filter(product => product.event_id === eventId) || [];
 
+  // Helper function to determine if a product is required based on category_code
+  const isProductRequired = (product: any) => {
+    return product.category_code === 'event-essential';
+  };
+
   React.useEffect(() => {
     // Auto-select required products with quantity 1
-    const requiredProducts = eventProducts.filter(product => product.is_required);
+    const requiredProducts = eventProducts.filter(product => isProductRequired(product));
     const initialOptions: Record<string, any> = { ...selectedOptions };
     
     requiredProducts.forEach(product => {
@@ -98,7 +103,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
   };
 
   const calculateProductTotal = (product: any) => {
-    const quantity = getProductOption(product.id, 'quantity') || (product.is_required ? 1 : 0);
+    const quantity = getProductOption(product.id, 'quantity') || (isProductRequired(product) ? 1 : 0);
     const priceAdjustment = getPriceAdjustment(product);
     return (product.price + priceAdjustment) * quantity;
   };
@@ -166,11 +171,11 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
             const variantTypes = getVariantTypes(product);
             const currentStock = getCurrentStock(product);
             const priceAdjustment = getPriceAdjustment(product);
-            const quantity = getProductOption(product.id, 'quantity') || (product.is_required ? 1 : 0);
+            const quantity = getProductOption(product.id, 'quantity') || (isProductRequired(product) ? 1 : 0);
             const productTotal = calculateProductTotal(product);
             const showStock = shouldShowStock(product);
             const isSelected = quantity > 0;
-            const isRequired = product.is_required;
+            const isRequired = isProductRequired(product);
 
             return (
               <div key={product.id} className="border rounded-lg p-4">
