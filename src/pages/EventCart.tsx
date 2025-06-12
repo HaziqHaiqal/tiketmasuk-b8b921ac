@@ -25,6 +25,7 @@ const EventCart = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [offerExpired, setOfferExpired] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -38,9 +39,11 @@ const EventCart = () => {
         
         if (difference > 0) {
           setTimeLeft(Math.floor(difference / 1000));
+          setOfferExpired(false);
         } else {
           setTimeLeft(0);
-          clearCart(navigate);
+          setOfferExpired(true);
+          // Don't automatically clear cart, just mark as expired
         }
       };
       
@@ -53,7 +56,7 @@ const EventCart = () => {
         clearInterval(timer);
       }
     };
-  }, [cartItems.length, getExpiryTime, clearCart, navigate]);
+  }, [cartItems.length, getExpiryTime]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -62,6 +65,11 @@ const EventCart = () => {
   };
 
   const handleProceed = () => {
+    if (offerExpired) {
+      // If offer expired, show message and don't proceed
+      return;
+    }
+    
     if (user) {
       navigate(`/event/${id}/complete-purchase`);
     } else {
@@ -79,6 +87,10 @@ const EventCart = () => {
     navigate(`/event/${id}/complete-purchase`);
   };
 
+  const handleClearExpiredCart = () => {
+    clearCart(navigate);
+  };
+
   // Show waiting list status
   const getStatusContent = () => {
     if (!waitingListEntry) return null;
@@ -94,13 +106,31 @@ const EventCart = () => {
       );
     }
 
-    if (waitingListEntry.status === 'offered' && timeLeft > 0) {
+    if (waitingListEntry.status === 'offered' && timeLeft > 0 && !offerExpired) {
       return (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-green-800 mb-2">Tickets offered!</h3>
           <p className="text-green-600">
             You have {formatTime(timeLeft)} to complete your purchase before the offer expires.
           </p>
+        </div>
+      );
+    }
+
+    if (offerExpired) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-red-800 mb-2">Offer Expired</h3>
+          <p className="text-red-600 mb-3">
+            Your ticket offer has expired. You can join the waiting list again to get a new offer.
+          </p>
+          <Button 
+            onClick={handleClearExpiredCart}
+            variant="outline"
+            className="border-red-300 text-red-700 hover:bg-red-50"
+          >
+            Clear Cart & Return to Event
+          </Button>
         </div>
       );
     }
@@ -141,7 +171,7 @@ const EventCart = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Event
             </Button>
-            {waitingListEntry?.status === 'offered' && timeLeft > 0 && (
+            {waitingListEntry?.status === 'offered' && timeLeft > 0 && !offerExpired && (
               <div className="flex items-center space-x-2 text-orange-600">
                 <Clock className="w-5 h-5" />
                 <span className="font-semibold">Time remaining: {formatTime(timeLeft)}</span>
@@ -180,6 +210,7 @@ const EventCart = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={offerExpired}
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
@@ -188,6 +219,7 @@ const EventCart = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          disabled={offerExpired}
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -197,6 +229,7 @@ const EventCart = () => {
                         size="sm"
                         onClick={() => removeFromCart(item.id)}
                         className="text-red-600 hover:text-red-700"
+                        disabled={offerExpired}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -230,8 +263,9 @@ const EventCart = () => {
                         placeholder="Promo code"
                         value={promoCode}
                         onChange={(e) => setPromoCode(e.target.value)}
+                        disabled={offerExpired}
                       />
-                      <Button variant="outline" size="sm" className="w-full">
+                      <Button variant="outline" size="sm" className="w-full" disabled={offerExpired}>
                         Apply Code
                       </Button>
                     </div>
@@ -248,15 +282,17 @@ const EventCart = () => {
                     onClick={handleProceed}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                     size="lg"
-                    disabled={waitingListEntry?.status !== 'offered'}
+                    disabled={waitingListEntry?.status !== 'offered' || offerExpired}
                   >
-                    {waitingListEntry?.status === 'offered' 
-                      ? (user ? 'Proceed to Checkout' : 'Continue as Guest or Login')
-                      : 'Waiting for ticket offer...'
+                    {offerExpired 
+                      ? 'Offer Expired'
+                      : waitingListEntry?.status === 'offered' 
+                        ? (user ? 'Proceed to Checkout' : 'Continue as Guest or Login')
+                        : 'Waiting for ticket offer...'
                     }
                   </Button>
 
-                  {!user && waitingListEntry?.status === 'offered' && (
+                  {!user && waitingListEntry?.status === 'offered' && !offerExpired && (
                     <div className="text-center">
                       <p className="text-sm text-gray-600 mb-2">
                         Have an account? Sign in for faster checkout
