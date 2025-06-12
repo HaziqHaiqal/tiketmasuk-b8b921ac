@@ -96,6 +96,16 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
     return allSelected && getCurrentStock(product) > 0;
   };
 
+  const shouldShowStock = (product: any) => {
+    const variantTypes = getVariantTypes(product);
+    if (variantTypes.length === 0) return true;
+    
+    // Only show stock status if all variants are selected
+    return variantTypes.every(type => 
+      getProductOption(product.id, `variant_${type}`)
+    );
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -133,6 +143,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
             const priceAdjustment = getPriceAdjustment(product);
             const quantity = getProductOption(product.id, 'quantity') || 0;
             const productTotal = calculateProductTotal(product);
+            const showStock = shouldShowStock(product);
 
             return (
               <div key={product.id} className="border rounded-lg p-4">
@@ -158,14 +169,18 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                         <Badge variant="outline" className="text-xs">
                           {product.category}
                         </Badge>
-                        {currentStock > 0 ? (
-                          <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                            {currentStock} in Stock
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">
-                            Out of Stock
-                          </Badge>
+                        {showStock && (
+                          <>
+                            {currentStock > 0 ? (
+                              <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+                                {currentStock} in Stock
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive" className="text-xs">
+                                Out of Stock
+                              </Badge>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -236,7 +251,7 @@ const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({
                     )}
 
                     {/* Variant selection requirement notice */}
-                    {variantTypes.length > 0 && !canSelectProduct(product) && currentStock > 0 && (
+                    {variantTypes.length > 0 && !canSelectProduct(product) && !showStock && (
                       <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
                         Please select all options to choose quantity
                       </div>

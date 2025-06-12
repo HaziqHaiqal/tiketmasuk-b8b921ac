@@ -1,22 +1,24 @@
 
 import React, { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Clock, User, FileText, Shield } from 'lucide-react';
+import { ArrowLeft, Clock, User, FileText, Shield, ExternalLink } from 'lucide-react';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 import { useAuth } from '@/hooks/useAuth';
 import CartTimerBar from '@/components/CartTimerBar';
 import TicketHolderForm from '@/components/TicketHolderForm';
+import CountryPhoneSelector from '@/components/CountryPhoneSelector';
 import { useForm } from 'react-hook-form';
 
 interface TicketHolderData {
   fullName: string;
   email: string;
   phone: string;
+  countryCode: string;
   icPassport: string;
   dateOfBirth: string;
   gender: string;
@@ -32,6 +34,7 @@ interface PurchaseFormData {
   buyerFullName: string;
   buyerEmail: string;
   buyerPhone: string;
+  buyerCountryCode: string;
   
   // Ticket Holders
   ticketHolders: TicketHolderData[];
@@ -47,6 +50,7 @@ const CompletePurchase = () => {
   const { user } = useAuth();
   const { cartItems, getTotalPrice, getTotalItems } = useShoppingCart();
   const [isLoading, setIsLoading] = useState(false);
+  const [buyerCountryCode, setBuyerCountryCode] = useState('+60');
 
   // Group cart items by ticket type and count tickets
   const ticketItems = useMemo(() => {
@@ -72,10 +76,12 @@ const CompletePurchase = () => {
       buyerFullName: user?.user_metadata?.full_name || '',
       buyerEmail: user?.email || '',
       buyerPhone: user?.user_metadata?.phone || '',
+      buyerCountryCode: '+60',
       ticketHolders: ticketHoldersList.map(() => ({
         fullName: '',
         email: '',
         phone: '',
+        countryCode: '+60',
         icPassport: '',
         dateOfBirth: '',
         gender: '',
@@ -92,6 +98,30 @@ const CompletePurchase = () => {
 
   const watchAcceptTerms = watch('acceptTerms');
   const watchAcceptPrivacy = watch('acceptPrivacy');
+  const watchBuyerPhone = watch('buyerPhone') || '';
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email) || 'Please enter a valid email address';
+  };
+
+  const validatePhone = (phone: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 8 || cleanPhone.length > 15) {
+      return 'Please enter a valid phone number';
+    }
+    return true;
+  };
+
+  const handleBuyerPhoneChange = (phone: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    setValue('buyerPhone', cleanPhone);
+  };
+
+  const handleBuyerCountryCodeChange = (code: string) => {
+    setBuyerCountryCode(code);
+    setValue('buyerCountryCode', code);
+  };
 
   if (getTotalItems() === 0) {
     return (
@@ -175,23 +205,32 @@ const CompletePurchase = () => {
                   <Input
                     id="buyerEmail"
                     type="email"
-                    {...register('buyerEmail', { required: 'Email is required' })}
+                    {...register('buyerEmail', { 
+                      required: 'Email is required',
+                      validate: validateEmail
+                    })}
                     className={errors.buyerEmail ? 'border-red-500' : ''}
                   />
                   {errors.buyerEmail && (
                     <p className="text-red-500 text-sm mt-1">{errors.buyerEmail.message}</p>
                   )}
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <Label htmlFor="buyerPhone">Phone Number *</Label>
-                  <Input
-                    id="buyerPhone"
-                    {...register('buyerPhone', { required: 'Phone number is required' })}
-                    className={errors.buyerPhone ? 'border-red-500' : ''}
+                  <CountryPhoneSelector
+                    phoneNumber={watchBuyerPhone}
+                    countryCode={buyerCountryCode}
+                    onPhoneChange={handleBuyerPhoneChange}
+                    onCountryChange={handleBuyerCountryCodeChange}
+                    error={errors.buyerPhone?.message}
                   />
-                  {errors.buyerPhone && (
-                    <p className="text-red-500 text-sm mt-1">{errors.buyerPhone.message}</p>
-                  )}
+                  <input
+                    type="hidden"
+                    {...register('buyerPhone', { 
+                      required: 'Phone number is required',
+                      validate: validatePhone
+                    })}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -220,6 +259,7 @@ const CompletePurchase = () => {
                       register={register}
                       setValue={setValue}
                       errors={errors}
+                      watch={watch}
                     />
                   ))}
                 </div>
@@ -247,7 +287,16 @@ const CompletePurchase = () => {
                   />
                   <div>
                     <Label htmlFor="acceptTerms" className="text-sm font-medium">
-                      I agree to the Terms and Conditions *
+                      I agree to the{' '}
+                      <Link 
+                        to="/terms-and-conditions" 
+                        target="_blank"
+                        className="text-blue-600 hover:text-blue-800 underline inline-flex items-center"
+                      >
+                        Terms and Conditions
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Link>
+                      {' '}*
                     </Label>
                     <p className="text-sm text-gray-600 mt-1">
                       By purchasing this ticket, you acknowledge that you have read, understood, and agree to be bound by the event's terms and conditions, including but not limited to entry requirements, refund policies, and liability waivers.
@@ -263,7 +312,16 @@ const CompletePurchase = () => {
                   />
                   <div>
                     <Label htmlFor="acceptPrivacy" className="text-sm font-medium">
-                      I agree to the Privacy Policy *
+                      I agree to the{' '}
+                      <Link 
+                        to="/privacy-policy" 
+                        target="_blank"
+                        className="text-blue-600 hover:text-blue-800 underline inline-flex items-center"
+                      >
+                        Privacy Policy
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Link>
+                      {' '}*
                     </Label>
                     <p className="text-sm text-gray-600 mt-1">
                       I consent to the collection, use, and disclosure of my personal information as described in the Privacy Policy for the purposes of event management and communication.

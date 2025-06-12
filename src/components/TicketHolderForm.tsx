@@ -1,11 +1,12 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from 'lucide-react';
 import EventOptionsSection from '@/components/EventOptionsSection';
+import CountryPhoneSelector from '@/components/CountryPhoneSelector';
+import DateOfBirthPicker from '@/components/DateOfBirthPicker';
 
 interface TicketHolderFormProps {
   ticketIndex: number;
@@ -14,6 +15,7 @@ interface TicketHolderFormProps {
   register: any;
   setValue: any;
   errors: any;
+  watch: any;
 }
 
 const TicketHolderForm: React.FC<TicketHolderFormProps> = ({
@@ -22,9 +24,58 @@ const TicketHolderForm: React.FC<TicketHolderFormProps> = ({
   eventId,
   register,
   setValue,
-  errors
+  errors,
+  watch
 }) => {
   const fieldPrefix = `ticketHolders.${ticketIndex}`;
+  const [countryCode, setCountryCode] = useState('+60'); // Default to Malaysia
+
+  // Watch form values for phone and DOB
+  const phoneNumber = watch(`${fieldPrefix}.phone`) || '';
+  const dateOfBirth = watch(`${fieldPrefix}.dateOfBirth`);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email) || 'Please enter a valid email address';
+  };
+
+  const validateICPassport = (value: string) => {
+    // Remove all non-alphanumeric characters for validation
+    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '');
+    if (cleanValue.length < 6) {
+      return 'IC/Passport number must be at least 6 characters';
+    }
+    return true;
+  };
+
+  const validatePhone = (phone: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 8 || cleanPhone.length > 15) {
+      return 'Please enter a valid phone number';
+    }
+    return true;
+  };
+
+  const handlePhoneChange = (phone: string) => {
+    // Remove non-numeric characters
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    setValue(`${fieldPrefix}.phone`, cleanPhone);
+  };
+
+  const handleCountryCodeChange = (code: string) => {
+    setCountryCode(code);
+    setValue(`${fieldPrefix}.countryCode`, code);
+  };
+
+  const handleDateOfBirthChange = (date: Date | undefined) => {
+    setValue(`${fieldPrefix}.dateOfBirth`, date ? date.toISOString().split('T')[0] : '');
+  };
+
+  const handleICPassportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove hyphens and spaces, keep only alphanumeric
+    const cleanValue = e.target.value.replace(/[-\s]/g, '');
+    setValue(`${fieldPrefix}.icPassport`, cleanValue);
+  };
 
   return (
     <Card className="mb-4">
@@ -56,7 +107,10 @@ const TicketHolderForm: React.FC<TicketHolderFormProps> = ({
                 <Input
                   id={`${fieldPrefix}.email`}
                   type="email"
-                  {...register(`${fieldPrefix}.email`, { required: 'Email is required' })}
+                  {...register(`${fieldPrefix}.email`, { 
+                    required: 'Email is required',
+                    validate: validateEmail
+                  })}
                   className={errors?.ticketHolders?.[ticketIndex]?.email ? 'border-red-500' : ''}
                 />
                 {errors?.ticketHolders?.[ticketIndex]?.email && (
@@ -65,21 +119,35 @@ const TicketHolderForm: React.FC<TicketHolderFormProps> = ({
               </div>
               <div>
                 <Label htmlFor={`${fieldPrefix}.phone`}>Mobile Number *</Label>
-                <Input
-                  id={`${fieldPrefix}.phone`}
-                  {...register(`${fieldPrefix}.phone`, { required: 'Mobile number is required' })}
-                  className={errors?.ticketHolders?.[ticketIndex]?.phone ? 'border-red-500' : ''}
+                <CountryPhoneSelector
+                  phoneNumber={phoneNumber}
+                  countryCode={countryCode}
+                  onPhoneChange={handlePhoneChange}
+                  onCountryChange={handleCountryCodeChange}
+                  error={errors?.ticketHolders?.[ticketIndex]?.phone?.message}
                 />
-                {errors?.ticketHolders?.[ticketIndex]?.phone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.ticketHolders[ticketIndex].phone.message}</p>
-                )}
+                <input
+                  type="hidden"
+                  {...register(`${fieldPrefix}.phone`, { 
+                    required: 'Mobile number is required',
+                    validate: validatePhone
+                  })}
+                />
               </div>
               <div>
                 <Label htmlFor={`${fieldPrefix}.icPassport`}>IC/Passport Number *</Label>
                 <Input
                   id={`${fieldPrefix}.icPassport`}
-                  {...register(`${fieldPrefix}.icPassport`, { required: 'IC/Passport number is required' })}
+                  placeholder="Without hyphens or spaces"
+                  onChange={handleICPassportChange}
                   className={errors?.ticketHolders?.[ticketIndex]?.icPassport ? 'border-red-500' : ''}
+                />
+                <input
+                  type="hidden"
+                  {...register(`${fieldPrefix}.icPassport`, { 
+                    required: 'IC/Passport number is required',
+                    validate: validateICPassport
+                  })}
                 />
                 {errors?.ticketHolders?.[ticketIndex]?.icPassport && (
                   <p className="text-red-500 text-sm mt-1">{errors.ticketHolders[ticketIndex].icPassport.message}</p>
@@ -87,28 +155,34 @@ const TicketHolderForm: React.FC<TicketHolderFormProps> = ({
               </div>
               <div>
                 <Label htmlFor={`${fieldPrefix}.dateOfBirth`}>Date of Birth *</Label>
-                <Input
-                  id={`${fieldPrefix}.dateOfBirth`}
-                  type="date"
-                  {...register(`${fieldPrefix}.dateOfBirth`, { required: 'Date of birth is required' })}
-                  className={errors?.ticketHolders?.[ticketIndex]?.dateOfBirth ? 'border-red-500' : ''}
+                <DateOfBirthPicker
+                  value={dateOfBirth ? new Date(dateOfBirth) : undefined}
+                  onChange={handleDateOfBirthChange}
+                  error={errors?.ticketHolders?.[ticketIndex]?.dateOfBirth?.message}
                 />
-                {errors?.ticketHolders?.[ticketIndex]?.dateOfBirth && (
-                  <p className="text-red-500 text-sm mt-1">{errors.ticketHolders[ticketIndex].dateOfBirth.message}</p>
-                )}
+                <input
+                  type="hidden"
+                  {...register(`${fieldPrefix}.dateOfBirth`, { required: 'Date of birth is required' })}
+                />
               </div>
               <div>
                 <Label htmlFor={`${fieldPrefix}.gender`}>Gender *</Label>
                 <Select onValueChange={(value) => setValue(`${fieldPrefix}.gender`, value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={errors?.ticketHolders?.[ticketIndex]?.gender ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                <input
+                  type="hidden"
+                  {...register(`${fieldPrefix}.gender`, { required: 'Gender is required' })}
+                />
+                {errors?.ticketHolders?.[ticketIndex]?.gender && (
+                  <p className="text-red-500 text-sm mt-1">{errors.ticketHolders[ticketIndex].gender.message}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor={`${fieldPrefix}.country`}>Country *</Label>
