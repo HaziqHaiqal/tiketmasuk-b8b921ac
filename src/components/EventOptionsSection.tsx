@@ -1,269 +1,267 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ShoppingBag, Plus, Minus } from 'lucide-react';
-import { useProducts } from '@/hooks/useProducts';
+import { Badge } from '@/components/ui/badge';
+import { Minus, Plus, ShirtIcon, Coffee, Utensils } from 'lucide-react';
+import { useShoppingCart } from '@/hooks/useShoppingCart';
+import { toast } from 'sonner';
 
 interface EventOptionsSectionProps {
   eventId: string;
-  ticketHolderIndex?: number;
-  onOptionsChange?: (options: any) => void;
 }
 
-const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ 
-  eventId, 
-  ticketHolderIndex, 
-  onOptionsChange 
-}) => {
-  const { data: products, isLoading } = useProducts();
-  const [selectedOptions, setSelectedOptions] = React.useState<Record<string, any>>({});
+// Mock data for event options/products
+const eventProducts = [
+  {
+    id: 'tshirt-001',
+    name: 'Event T-Shirt',
+    description: 'Official event merchandise',
+    basePrice: 35,
+    image: '/placeholder.svg',
+    icon: ShirtIcon,
+    variants: [
+      { id: 'tshirt-s', name: 'Small', price: 0, stock: 10 },
+      { id: 'tshirt-m', name: 'Medium', price: 0, stock: 15 },
+      { id: 'tshirt-l', name: 'Large', price: 0, stock: 8 },
+      { id: 'tshirt-xl', name: 'X-Large', price: 5, stock: 5 },
+    ]
+  },
+  {
+    id: 'coffee-001',
+    name: 'Premium Coffee',
+    description: 'Freshly brewed coffee during the event',
+    basePrice: 12,
+    image: '/placeholder.svg',
+    icon: Coffee,
+    variants: [
+      { id: 'coffee-regular', name: 'Regular', price: 0, stock: 20 },
+      { id: 'coffee-large', name: 'Large', price: 3, stock: 15 },
+    ]
+  },
+  {
+    id: 'meal-001',
+    name: 'Event Meal',
+    description: 'Catered lunch during the event',
+    basePrice: 25,
+    image: '/placeholder.svg',
+    icon: Utensils,
+    variants: [
+      { id: 'meal-veg', name: 'Vegetarian', price: 0, stock: 12 },
+      { id: 'meal-chicken', name: 'Chicken', price: 0, stock: 18 },
+      { id: 'meal-fish', name: 'Fish', price: 5, stock: 8 },
+    ]
+  }
+];
 
-  // Filter products for this specific event
-  const eventProducts = products?.filter(product => product.event_id === eventId) || [];
+const EventOptionsSection: React.FC<EventOptionsSectionProps> = ({ eventId }) => {
+  const { addToCart } = useShoppingCart();
+  const [selectedVariants, setSelectedVariants] = useState<{ [key: string]: any }>({});
+  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
 
-  const updateProductOption = (productId: string, field: string, value: any) => {
-    const newOptions = {
-      ...selectedOptions,
-      [productId]: {
-        ...selectedOptions[productId],
-        [field]: value
+  const handleVariantChange = (productId: string, variantId: string) => {
+    const product = eventProducts.find(p => p.id === productId);
+    const variant = product?.variants.find(v => v.id === variantId);
+    
+    if (variant) {
+      setSelectedVariants(prev => ({
+        ...prev,
+        [productId]: variant
+      }));
+      // Reset quantity when variant changes
+      setQuantities(prev => ({
+        ...prev,
+        [productId]: 0
+      }));
+    }
+  };
+
+  const handleQuantityChange = (productId: string, delta: number) => {
+    const currentQty = quantities[productId] || 0;
+    const newQty = Math.max(0, Math.min(1, currentQty + delta)); // Limit to max 1 per ticket
+    
+    setQuantities(prev => ({
+      ...prev,
+      [productId]: newQty
+    }));
+  };
+
+  const addProductToCart = (product: any) => {
+    const selectedVariant = selectedVariants[product.id];
+    const quantity = quantities[product.id] || 0;
+
+    if (!selectedVariant) {
+      toast.error('Please select a variant first');
+      return;
+    }
+
+    if (quantity === 0) {
+      toast.error('Please select quantity');
+      return;
+    }
+
+    const cartItem = {
+      id: `${product.id}-${selectedVariant.id}-${Date.now()}`,
+      title: `${product.name} (${selectedVariant.name})`,
+      price: product.basePrice + selectedVariant.price,
+      image: product.image,
+      eventId,
+      ticketType: 'product',
+      selectedOptions: {
+        variant: selectedVariant
       }
     };
-    setSelectedOptions(newOptions);
+
+    addToCart(cartItem, quantity);
     
-    // Notify parent component of changes
-    if (onOptionsChange) {
-      onOptionsChange(newOptions);
-    }
+    // Reset selections after adding to cart
+    setQuantities(prev => ({ ...prev, [product.id]: 0 }));
   };
 
-  const getProductOption = (productId: string, field: string) => {
-    return selectedOptions[productId]?.[field] || '';
+  const getSelectedVariant = (productId: string) => {
+    return selectedVariants[productId];
   };
 
-  const getVariantTypes = (product: any) => {
-    if (!product.variants?.options) return [];
-    return Object.keys(product.variants.options);
+  const getVariantStock = (productId: string) => {
+    const variant = getSelectedVariant(productId);
+    return variant ? variant.stock : 0;
   };
 
-  const getVariantValues = (product: any, variantType: string) => {
-    if (!product.variants?.options) return [];
-    return product.variants.options[variantType] || [];
+  const getTotalPrice = (product: any) => {
+    const variant = getSelectedVariant(product.id);
+    const quantity = quantities[product.id] || 0;
+    const basePrice = product.basePrice;
+    const variantPrice = variant ? variant.price : 0;
+    return (basePrice + variantPrice) * quantity;
   };
-
-  const getCurrentStock = (product: any) => {
-    const variantTypes = getVariantTypes(product);
-    if (!product.variants?.stock || variantTypes.length === 0) {
-      return product.in_stock ? 999 : 0;
-    }
-    
-    const variantKey = variantTypes.map(type => 
-      getProductOption(product.id, `variant_${type}`)
-    ).join('-');
-    
-    return product.variants.stock[variantKey] || 0;
-  };
-
-  const getPriceAdjustment = (product: any) => {
-    const variantTypes = getVariantTypes(product);
-    if (!product.variants?.pricing || variantTypes.length === 0) return 0;
-    
-    const variantKey = variantTypes.map(type => 
-      getProductOption(product.id, `variant_${type}`)
-    ).join('-');
-    
-    return product.variants.pricing[variantKey] || 0;
-  };
-
-  const calculateProductTotal = (product: any) => {
-    const quantity = getProductOption(product.id, 'quantity') || 0;
-    const priceAdjustment = getPriceAdjustment(product);
-    return (product.price + priceAdjustment) * quantity;
-  };
-
-  const canSelectProduct = (product: any) => {
-    const variantTypes = getVariantTypes(product);
-    if (variantTypes.length === 0) return product.in_stock;
-    
-    // Check if all variant types have been selected
-    const allSelected = variantTypes.every(type => 
-      getProductOption(product.id, `variant_${type}`)
-    );
-    
-    return allSelected && getCurrentStock(product) > 0;
-  };
-
-  const shouldShowStock = (product: any) => {
-    const variantTypes = getVariantTypes(product);
-    if (variantTypes.length === 0) return true;
-    
-    // Only show stock status if all variants are selected
-    return variantTypes.every(type => 
-      getProductOption(product.id, `variant_${type}`)
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <ShoppingBag className="w-5 h-5 mr-2" />
-            Event Options
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600">Loading event products...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (eventProducts.length === 0) {
-    return null;
-  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <ShoppingBag className="w-5 h-5 mr-2" />
-          Event Options
-        </CardTitle>
-        <p className="text-gray-600">Select merchandise and products for this ticket</p>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {eventProducts.map((product) => {
-            const variantTypes = getVariantTypes(product);
-            const currentStock = getCurrentStock(product);
-            const priceAdjustment = getPriceAdjustment(product);
-            const quantity = getProductOption(product.id, 'quantity') || 0;
-            const productTotal = calculateProductTotal(product);
-            const showStock = shouldShowStock(product);
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold mb-2">Event Add-ons & Merchandise</h3>
+        <p className="text-sm text-gray-600">Enhance your event experience (max 1 per ticket)</p>
+      </div>
 
-            return (
-              <div key={product.id} className="border rounded-lg p-4">
-                <div className="flex items-start space-x-4">
-                  <img
-                    src={product.image || '/placeholder.svg'}
-                    alt={product.title}
-                    className="w-16 h-16 object-cover rounded-lg"
-                  />
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <h3 className="font-semibold">{product.title}</h3>
-                      <p className="text-gray-600 text-sm">{product.description}</p>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <span className="text-lg font-bold text-green-600">
-                          RM {product.price.toFixed(2)}
-                          {priceAdjustment > 0 && (
-                            <span className="text-sm text-gray-600">
-                              {' '}+ RM{priceAdjustment.toFixed(2)}
-                            </span>
-                          )}
-                        </span>
-                        <Badge variant="outline" className="text-xs">
-                          {product.category}
-                        </Badge>
-                        {showStock && (
-                          <>
-                            {currentStock > 0 ? (
-                              <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-                                {currentStock} in Stock
-                              </Badge>
-                            ) : (
-                              <Badge variant="destructive" className="text-xs">
-                                Out of Stock
-                              </Badge>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
+      {eventProducts.map((product) => {
+        const Icon = product.icon;
+        const selectedVariant = getSelectedVariant(product.id);
+        const quantity = quantities[product.id] || 0;
+        const stock = getVariantStock(product.id);
+        const totalPrice = getTotalPrice(product);
 
-                    {/* Variant Selection */}
-                    {variantTypes.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {variantTypes.map((variantType) => (
-                          <div key={variantType}>
-                            <label className="text-sm font-medium text-gray-700 mb-1 block">
-                              {variantType}
-                            </label>
-                            <Select
-                              value={getProductOption(product.id, `variant_${variantType}`)}
-                              onValueChange={(value) => 
-                                updateProductOption(product.id, `variant_${variantType}`, value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder={`Select ${variantType.toLowerCase()}`} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {getVariantValues(product, variantType).map((value) => (
-                                  <SelectItem key={value} value={value}>
-                                    {value}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Quantity Selection */}
-                    {(variantTypes.length === 0 || canSelectProduct(product)) && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium">Quantity:</span>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProductOption(product.id, 'quantity', Math.max(0, quantity - 1))}
-                              disabled={quantity === 0}
-                            >
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <span className="w-8 text-center font-medium">{quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => updateProductOption(product.id, 'quantity', quantity + 1)}
-                              disabled={currentStock === 0 || quantity >= currentStock}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        {quantity > 0 && (
-                          <div className="text-right">
-                            <span className="text-lg font-bold text-blue-600">
-                              RM {productTotal.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Variant selection requirement notice */}
-                    {variantTypes.length > 0 && !canSelectProduct(product) && !showStock && (
-                      <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
-                        Please select all options to choose quantity
-                      </div>
+        return (
+          <Card key={product.id} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Icon className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-base">{product.name}</CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+                  <div className="mt-2">
+                    <span className="text-lg font-semibold text-blue-600">
+                      RM {product.basePrice}
+                    </span>
+                    {selectedVariant && selectedVariant.price > 0 && (
+                      <span className="text-sm text-gray-500 ml-1">
+                        + RM {selectedVariant.price}
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+            </CardHeader>
+
+            <CardContent className="pt-0">
+              <div className="space-y-4">
+                {/* Variant Selection */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Select Option:</label>
+                  <Select 
+                    value={selectedVariant?.id || ''} 
+                    onValueChange={(value) => handleVariantChange(product.id, value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose an option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {product.variants.map((variant) => (
+                        <SelectItem key={variant.id} value={variant.id}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{variant.name}</span>
+                            <div className="flex items-center space-x-2 ml-4">
+                              {variant.price > 0 && (
+                                <span className="text-sm text-blue-600">+RM {variant.price}</span>
+                              )}
+                              <Badge variant={variant.stock > 0 ? "secondary" : "destructive"}>
+                                {variant.stock > 0 ? `${variant.stock} left` : 'Out of Stock'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Stock Display and Quantity Controls */}
+                {selectedVariant && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={stock > 0 ? "secondary" : "destructive"}>
+                        {stock > 0 ? `${stock} available` : 'Out of Stock'}
+                      </Badge>
+                      <span className="text-xs text-gray-500">(max 1 per ticket)</span>
+                    </div>
+
+                    {stock > 0 && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleQuantityChange(product.id, -1)}
+                            disabled={quantity === 0}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-8 text-center text-sm">{quantity}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleQuantityChange(product.id, 1)}
+                            disabled={quantity >= 1} // Limit to 1
+                            className="h-8 w-8 p-0"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+
+                        {quantity > 0 && (
+                          <div className="text-right">
+                            <div className="text-sm font-semibold">RM {totalPrice}</div>
+                            <Button
+                              size="sm"
+                              onClick={() => addProductToCart(product)}
+                              className="mt-1"
+                            >
+                              Add to Cart
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
   );
 };
 
