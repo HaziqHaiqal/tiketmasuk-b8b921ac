@@ -31,7 +31,7 @@ interface EventTicketTabProps {
 const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
   const navigate = useNavigate();
   const { id: eventId } = useParams();
-  const { addToCart, loading, cartItems, waitingListEntry } = useWaitingListCart(eventId!);
+  const { addToCart, loading } = useWaitingListCart(eventId!);
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
 
   const updateTicketQuantity = (ticketId: string, change: number) => {
@@ -94,12 +94,12 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
       // Clear selections after successful addition
       setSelectedTickets({});
       
-      // Navigate to cart if items were added or user is in queue
-      if (cartItems.length > 0 || waitingListEntry) {
-        setTimeout(() => {
-          navigate(`/event/${eventId}/cart`);
-        }, 500);
-      }
+      // Always navigate to cart page after adding tickets
+      console.log('Navigating to cart page:', `/event/${eventId}/cart`);
+      setTimeout(() => {
+        navigate(`/event/${eventId}/cart`);
+      }, 1000);
+      
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error('Failed to add tickets to cart');
