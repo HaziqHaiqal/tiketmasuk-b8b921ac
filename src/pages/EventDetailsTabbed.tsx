@@ -10,6 +10,7 @@ import EventTicketTab from '@/components/EventTicketTab';
 import EventDetailsTab from '@/components/EventDetailsTab';
 import EventOrganizerTab from '@/components/EventOrganizerTab';
 import CartTimerBar from '@/components/CartTimerBar';
+import Header from '@/components/Header';
 import { useShoppingCart } from '@/hooks/useShoppingCart';
 
 const EventDetailsTabbed = () => {
@@ -77,14 +78,7 @@ const EventDetailsTabbed = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Events
-          </Button>
-        </div>
-      </div>
+      <Header />
 
       {/* Event Hero Section */}
       <div className="bg-white">
