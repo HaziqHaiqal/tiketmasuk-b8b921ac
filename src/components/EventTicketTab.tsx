@@ -64,15 +64,16 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
       return;
     }
 
-    // Add tickets to cart
+    // Add each ticket individually to the cart
     Object.entries(selectedTickets).forEach(([ticketId, quantity]) => {
       if (quantity > 0) {
         const ticket = event.ticketTypes.find(t => t.id === ticketId);
         if (ticket) {
+          // Add each ticket as a separate item in the cart
           for (let i = 0; i < quantity; i++) {
             addToCart({
-              id: `${ticket.id}-${Date.now()}-${i}`,
-              title: `${event.title} - ${ticket.name}`,
+              id: `${ticketId}-${Date.now()}-${Math.random()}`, // Ensure unique ID
+              title: `${ticket.name}`,
               price: ticket.price,
               image: '/placeholder.svg'
             });
@@ -81,7 +82,7 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
       }
     });
 
-    toast.success('Tickets added to cart!');
+    // Navigate to cart after adding tickets
     navigate(`/event/${event.id}/cart`);
   };
 

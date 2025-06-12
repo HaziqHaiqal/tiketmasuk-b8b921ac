@@ -32,12 +32,12 @@ export const useShoppingCart = () => {
 
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
+      const existingItem = prevItems.find(item => item.title === product.title && item.price === product.price);
       
       if (existingItem) {
         // Increase quantity if item already exists
         return prevItems.map(item =>
-          item.id === product.id
+          item.id === existingItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -80,6 +80,7 @@ export const useShoppingCart = () => {
 
   const clearCart = () => {
     setCartItems([]);
+    localStorage.removeItem('shopping-cart');
     toast.success('Cart cleared');
   };
 
