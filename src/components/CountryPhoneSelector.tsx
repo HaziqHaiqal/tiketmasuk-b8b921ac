@@ -32,26 +32,12 @@ const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
   error,
   className
 }) => {
-  const selectedCountry = countries.find(country => country.code === countryCode);
-
   return (
     <div className={className}>
       <div className="flex space-x-2">
         <Select value={countryCode} onValueChange={onCountryChange}>
           <SelectTrigger className="w-32">
-            <SelectValue>
-              {selectedCountry ? (
-                <span className="flex items-center space-x-2">
-                  <span>{selectedCountry.flag}</span>
-                  <span>{selectedCountry.code}</span>
-                </span>
-              ) : (
-                <span className="flex items-center space-x-2">
-                  <span>🇲🇾</span>
-                  <span>+60</span>
-                </span>
-              )}
-            </SelectValue>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {countries.map((country) => (
@@ -59,7 +45,6 @@ const CountryPhoneSelector: React.FC<CountryPhoneSelectorProps> = ({
                 <span className="flex items-center space-x-2">
                   <span>{country.flag}</span>
                   <span>{country.code}</span>
-                  <span className="text-sm text-gray-500">{country.name}</span>
                 </span>
               </SelectItem>
             ))}

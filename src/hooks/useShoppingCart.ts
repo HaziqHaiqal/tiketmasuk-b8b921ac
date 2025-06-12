@@ -10,7 +10,6 @@ interface CartItem {
   quantity: number;
   eventId: string;
   ticketType: string;
-  selectedOptions?: { [key: string]: any }; // Add selected options
 }
 
 // Create a singleton-like state manager to prevent multiple instances
@@ -88,37 +87,12 @@ export const useShoppingCart = () => {
     });
   };
 
-  const updateItemOptions = (productId: string, selectedOptions: { [key: string]: any }) => {
-    setCartItems(prevItems => {
-      const updatedItems = prevItems.map(item =>
-        item.id === productId
-          ? { ...item, selectedOptions }
-          : item
-      );
-      console.log('Updated item options:', updatedItems);
-      return updatedItems;
-    });
-  };
-
   const getTotalItems = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
 
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => {
-      let itemTotal = item.price * item.quantity;
-      
-      // Add price from selected options/products
-      if (item.selectedOptions) {
-        Object.values(item.selectedOptions).forEach((option: any) => {
-          if (option && typeof option === 'object' && option.price) {
-            itemTotal += option.price * item.quantity;
-          }
-        });
-      }
-      
-      return total + itemTotal;
-    }, 0);
+    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const clearCart = (eventId?: string, navigate?: (path: string) => void) => {
@@ -139,7 +113,6 @@ export const useShoppingCart = () => {
     addToCart,
     removeFromCart,
     updateQuantity,
-    updateItemOptions,
     getTotalItems,
     getTotalPrice,
     clearCart
