@@ -15,6 +15,7 @@ export interface Product {
   in_stock: boolean | null;
   vendor_id: string;
   event_id: string | null;
+  is_required: boolean | null;
   created_at: string;
   updated_at: string;
   variants?: {
