@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +20,7 @@ interface WaitingListResponse {
   waiting_list_id?: string;
   user_id?: string;
   offer_expires_at?: number;
+  message?: string;
   error?: string;
 }
 
@@ -72,6 +74,7 @@ export const useWaitingListCart = (eventId: string) => {
         if (savedCart) {
           try {
             const cartData = JSON.parse(savedCart);
+            console.log('Restoring cart from localStorage:', cartData);
             setCartItems(cartData);
           } catch (error) {
             console.error('Error parsing saved cart:', error);
@@ -90,12 +93,12 @@ export const useWaitingListCart = (eventId: string) => {
     setLoading(true);
     try {
       const userId = getCurrentUserId();
-      console.log('Adding to cart for user:', userId);
+      console.log('Adding to cart for user:', userId, 'product:', product);
 
-      // Call the join_waiting_list function with text parameter (for guest users)
+      // Call the join_waiting_list function with text parameter (for all users)
       const { data, error } = await supabase.rpc('join_waiting_list', {
         event_uuid: eventId,
-        user_uuid: userId // This will be passed as text, matching the function signature
+        user_uuid: userId // Pass as text for both authenticated and guest users
       });
 
       if (error) {
@@ -106,7 +109,7 @@ export const useWaitingListCart = (eventId: string) => {
 
       console.log('Join waiting list response:', data);
 
-      // Handle the response properly with correct type conversion
+      // Handle the response - data should be a JSON object
       if (data && typeof data === 'object') {
         const response = data as unknown as WaitingListResponse;
         
@@ -114,10 +117,15 @@ export const useWaitingListCart = (eventId: string) => {
           // Add item to cart
           const newItem = { ...product, quantity };
           const updatedItems = [...cartItems, newItem];
+          
+          console.log('Adding item to cart:', newItem);
+          console.log('Updated cart items:', updatedItems);
+          
           setCartItems(updatedItems);
 
           // Save cart to localStorage
           localStorage.setItem(`cart-${userId}-${eventId}`, JSON.stringify(updatedItems));
+          console.log('Cart saved to localStorage');
 
           if (response.status === 'offered') {
             toast.success('Ticket offered! You have 20 minutes to complete purchase.');
@@ -131,6 +139,7 @@ export const useWaitingListCart = (eventId: string) => {
           toast.error(response.error || 'Failed to join waiting list');
         }
       } else {
+        console.error('Unexpected response format:', data);
         toast.error('Unexpected response from server');
       }
     } catch (error) {
@@ -215,13 +224,39 @@ export const useWaitingListCart = (eventId: string) => {
       return null;
     }
     
-    // offer_expires_at is stored as bigint (milliseconds)
-    return waitingListEntry.offer_expires_at;
+    // offer_expires_at is stored as bigint (milliseconds) or timestamp
+    if (waitingListEntry.offer_expires_at) {
+      // If it's already in milliseconds, return as is
+      if (waitingListEntry.offer_expires_at > 1000000000000) {
+        return waitingListEntry.offer_expires_at;
+      }
+      // If it's in seconds, convert to milliseconds
+      return waitingListEntry.offer_expires_at * 1000;
+    }
+    
+    return null;
   };
 
-  // Initialize on mount
+  // Initialize on mount and restore cart if user has waiting list entry
   useEffect(() => {
-    checkWaitingListStatus();
+    const initializeCart = async () => {
+      await checkWaitingListStatus();
+      
+      // If no waiting list entry, try to restore from localStorage anyway (for persistence)
+      const userId = getCurrentUserId();
+      const savedCart = localStorage.getItem(`cart-${userId}-${eventId}`);
+      if (savedCart && cartItems.length === 0) {
+        try {
+          const cartData = JSON.parse(savedCart);
+          console.log('Restoring cart from localStorage on init:', cartData);
+          setCartItems(cartData);
+        } catch (error) {
+          console.error('Error parsing saved cart on init:', error);
+        }
+      }
+    };
+    
+    initializeCart();
   }, [eventId, user?.id]);
 
   // Set up real-time subscription for waiting list updates
@@ -232,7 +267,7 @@ export const useWaitingListCart = (eventId: string) => {
     console.log('Setting up real-time subscription for user:', userId);
 
     // Create a unique channel name to avoid conflicts
-    const channelName = `waiting_list_updates_${eventId}_${userId}_${Date.now()}`;
+    const channelName = `waiting_list_updates_${eventId}_${userId.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
     
     const subscription = supabase
       .channel(channelName)
