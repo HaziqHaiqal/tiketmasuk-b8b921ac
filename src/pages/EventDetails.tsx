@@ -154,7 +154,7 @@ const EventDetails = () => {
   };
 
   const handleBackToEvents = () => {
-    navigate('/browse');
+    navigate('/events');
   };
 
   if (eventLoading) {

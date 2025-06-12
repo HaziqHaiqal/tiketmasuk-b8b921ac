@@ -22,7 +22,7 @@ export const navItems = [
     page: <Index />,
   },
   {
-    to: "/browse",
+    to: "/events",
     page: <Browse />,
   },
   {
