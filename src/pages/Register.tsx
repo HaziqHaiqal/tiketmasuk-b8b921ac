@@ -56,7 +56,7 @@ const Register = () => {
         alert('Registration successful! Your vendor account is pending admin approval. You will be notified once approved.');
         navigate('/');
       } else {
-        navigate('/customer/dashboard');
+        navigate('/customer-dashboard');
       }
     } catch (error) {
       console.error('Registration failed:', error);
