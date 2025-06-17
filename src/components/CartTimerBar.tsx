@@ -103,22 +103,49 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
 
     if (waitingListEntry.status === 'offered' && timeLeft > 0) {
       return (
-        <div className="flex items-center space-x-2">
-          <Clock className="w-5 h-5" />
-          <span className="font-medium">
-            Reservation expires in: {formatTime(timeLeft)}
-          </span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Clock className="w-5 h-5" />
+            <span className="font-medium">
+              Reservation expires in: {formatTime(timeLeft)}
+            </span>
+          </div>
+          
+          {/* Show detailed queue info */}
+          {queueStats.ticketTypeStats.length > 0 && (
+            <div className="hidden md:flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full">
+              <Users className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Total tickets: {getTotalItems()}, {queueStats.ticketTypeStats.map(stat => 
+                  `${stat.totalInQueue}/${stat.totalLimit} in queue for ${stat.ticketType}`
+                ).join(', ')}
+              </span>
+            </div>
+          )}
         </div>
       );
     }
 
     if (waitingListEntry.status === 'waiting') {
       return (
-        <div className="flex items-center space-x-2">
-          <Users className="w-5 h-5" />
-          <span className="font-medium">
-            In waiting list for {waitingListEntry.ticket_type || 'General'} tickets
-          </span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Users className="w-5 h-5" />
+            <span className="font-medium">
+              In waiting list
+            </span>
+          </div>
+          
+          {/* Show detailed queue info */}
+          {queueStats.ticketTypeStats.length > 0 && (
+            <div className="hidden md:flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full">
+              <span className="text-sm font-medium">
+                Total tickets: {getTotalItems()}, {queueStats.ticketTypeStats.map(stat => 
+                  `${stat.totalInQueue}/${stat.totalLimit} in queue for ${stat.ticketType}`
+                ).join(', ')}
+              </span>
+            </div>
+          )}
         </div>
       );
     }
@@ -134,29 +161,11 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
           : 'bg-blue-600 text-white'
       }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 flex-1 min-w-0">
             {getStatusInfo()}
-            
-            {queueStats.totalInSystem > 0 && (
-              <div className="flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full">
-                <Users className="w-4 h-4" />
-                <span className="text-sm font-medium">
-                  {queueStats.totalInSystem} people in system
-                </span>
-              </div>
-            )}
-            
-            {queueStats.totalWaiting > 0 && (
-              <div className="flex items-center space-x-2 bg-red-600/80 px-3 py-1 rounded-full">
-                <Users className="w-4 h-4" />
-                <span className="text-sm font-medium">
-                  {queueStats.totalWaiting} waiting in queue
-                </span>
-              </div>
-            )}
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 flex-shrink-0">
             <Button 
               variant="outline" 
               size="sm"

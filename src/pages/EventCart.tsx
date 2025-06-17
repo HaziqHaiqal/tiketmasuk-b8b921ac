@@ -4,8 +4,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Clock, Minus, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clock, Minus, Plus, Trash2, Users } from 'lucide-react';
 import { useWaitingListCart } from '@/hooks/useWaitingListCart';
+import { useQueueStats } from '@/hooks/useQueueStats';
 import { useAuth } from '@/hooks/useAuth';
 
 const EventCart = () => {
@@ -21,6 +22,7 @@ const EventCart = () => {
     clearCart, 
     getExpiryTime 
   } = useWaitingListCart(id!);
+  const { queueStats } = useQueueStats(id);
   const [timeLeft, setTimeLeft] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [offerExpired, setOfferExpired] = useState(false);
@@ -96,19 +98,43 @@ const EventCart = () => {
     clearCart(navigate);
   };
 
+  // Get total tickets across all items
+  const getTotalTickets = () => {
+    return cartItems.reduce((total, item) => total + item.quantity, 0);
+  };
+
   // Show waiting list status
   const getStatusContent = () => {
     if (!waitingListEntry) return null;
 
     if (waitingListEntry.status === 'waiting') {
       return (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-blue-800 mb-2">You're in the waiting list</h3>
-          <p className="text-blue-600">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Users className="w-6 h-6 text-blue-600" />
+            <h3 className="font-semibold text-blue-800 text-lg">You're in the waiting list</h3>
+          </div>
+          <p className="text-blue-600 mb-4">
             You'll be notified when tickets become available. Keep this page open to be ready when your turn comes!
           </p>
-          <div className="mt-2 text-sm text-blue-700">
-            <strong>Ticket Type:</strong> {waitingListEntry.ticket_type || 'General'}
+          
+          {/* Queue Information */}
+          <div className="space-y-3">
+            <div className="text-sm text-blue-700">
+              <strong>Total tickets:</strong> {getTotalTickets()}
+            </div>
+            
+            {queueStats.ticketTypeStats.map((typeStats, index) => (
+              <div key={index} className="bg-blue-100 rounded-lg p-3">
+                <div className="text-sm font-medium text-blue-800">
+                  {queueStats.ticketTypeStats.length > 1 && `${typeStats.userQuantity} tickets in queue for `}
+                  {typeStats.ticketType === 'General' ? 'Tech Conference 2024' : `Tech Conference 2024 - ${typeStats.ticketType}`}
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  {typeStats.totalInQueue}/{typeStats.totalLimit} tickets in queue
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       );
@@ -116,14 +142,41 @@ const EventCart = () => {
 
     if (waitingListEntry.status === 'offered' && timeLeft > 0 && !offerExpired) {
       return (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-green-800 mb-2">Tickets Reserved!</h3>
-          <p className="text-green-600">
-            You have <strong>{formatTime(timeLeft)}</strong> to complete your purchase before the offer expires.
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <Clock className="w-6 h-6 text-green-600" />
+              <h3 className="font-semibold text-green-800 text-lg">Tickets Reserved!</h3>
+            </div>
+            <div className="bg-orange-500 text-white px-4 py-2 rounded-lg">
+              <div className="text-center">
+                <div className="text-xs font-medium">TIME REMAINING</div>
+                <div className="text-xl font-bold">{formatTime(timeLeft)}</div>
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-green-600 mb-4">
+            Complete your purchase before the timer expires or your tickets will be released to others in the queue.
           </p>
-          <div className="mt-2 text-sm text-green-700">
-            <strong>Ticket Type:</strong> {waitingListEntry.ticket_type || 'General'} | 
-            <strong> Quantity:</strong> {waitingListEntry.quantity || 1}
+          
+          {/* Queue Information */}
+          <div className="space-y-3">
+            <div className="text-sm text-green-700">
+              <strong>Total tickets:</strong> {getTotalTickets()}
+            </div>
+            
+            {queueStats.ticketTypeStats.map((typeStats, index) => (
+              <div key={index} className="bg-green-100 rounded-lg p-3">
+                <div className="text-sm font-medium text-green-800">
+                  {queueStats.ticketTypeStats.length > 1 && `${typeStats.userQuantity} tickets reserved for `}
+                  {typeStats.ticketType === 'General' ? 'Tech Conference 2024' : `Tech Conference 2024 - ${typeStats.ticketType}`}
+                </div>
+                <div className="text-xs text-green-600 mt-1">
+                  {typeStats.totalInQueue}/{typeStats.totalLimit} tickets in system
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       );
@@ -179,21 +232,13 @@ const EventCart = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Timer */}
+      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <Button variant="ghost" onClick={() => navigate(`/event/${id}`)}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Event
-            </Button>
-            {waitingListEntry?.status === 'offered' && timeLeft > 0 && !offerExpired && (
-              <div className="flex items-center space-x-2 text-orange-600 bg-orange-50 px-4 py-2 rounded-lg">
-                <Clock className="w-5 h-5" />
-                <span className="font-semibold text-lg">Time remaining: {formatTime(timeLeft)}</span>
-              </div>
-            )}
-          </div>
+          <Button variant="ghost" onClick={() => navigate(`/event/${id}`)}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Event
+          </Button>
         </div>
       </div>
 
