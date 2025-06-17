@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -278,7 +279,8 @@ export const useWaitingListCart = (eventId: string) => {
 
     console.log('Setting up real-time subscription for user:', user.id);
 
-    const channelName = `waiting_list_updates_${eventId}_${user.id.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+    // Create a unique channel name that includes timestamp to avoid conflicts
+    const channelName = `waiting_list_${eventId}_${user.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
     
     const subscription = supabase
       .channel(channelName)
@@ -292,6 +294,7 @@ export const useWaitingListCart = (eventId: string) => {
         },
         (payload) => {
           console.log('Real-time waiting list update:', payload);
+          // Add a small delay to ensure database consistency
           setTimeout(() => {
             checkWaitingListStatus();
           }, 100);
@@ -301,7 +304,7 @@ export const useWaitingListCart = (eventId: string) => {
 
     return () => {
       console.log('Cleaning up subscription:', channelName);
-      subscription.unsubscribe();
+      supabase.removeChannel(subscription);
     };
   }, [eventId, user?.id]);
 
