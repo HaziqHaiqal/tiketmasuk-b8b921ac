@@ -96,8 +96,8 @@ BEGIN
   -- Check availability for this specific ticket type
   SELECT check_ticket_type_availability(event_uuid, ticket_type_param) INTO available_result;
   
-  -- Calculate current timestamp in milliseconds for offer expiration (20 minutes)
-  offer_expires_at_ms := EXTRACT(EPOCH FROM (NOW() + INTERVAL '20 minutes')) * 1000;
+  -- Calculate current timestamp in milliseconds for offer expiration (30 minutes)
+  offer_expires_at_ms := EXTRACT(EPOCH FROM (NOW() + INTERVAL '30 minutes')) * 1000;
   
   IF (available_result->>'available')::BOOLEAN THEN
     -- Tickets available - create offer immediately
@@ -122,7 +122,7 @@ BEGIN
     RETURN json_build_object(
       'success', true,
       'status', 'offered',
-      'message', 'Ticket offered - you have 20 minutes to purchase',
+      'message', 'Ticket offered - you have 30 minutes to purchase',
       'waiting_list_id', waiting_list_id,
       'user_id', current_user_id::text,
       'ticket_type', ticket_type_param,
@@ -212,7 +212,7 @@ BEGIN
 END;
 $$;
 
--- Update process_ticket_queue to handle ticket types
+-- Update process_ticket_queue to handle ticket types with 30-minute expiry
 CREATE OR REPLACE FUNCTION public.process_ticket_queue(event_uuid uuid DEFAULT NULL::uuid)
 RETURNS integer
 LANGUAGE plpgsql
@@ -264,7 +264,7 @@ BEGIN
       ORDER BY created_at ASC
       LIMIT availability_result.available_spots
     LOOP
-      offer_expiry := now_timestamp + (20 * 60 * 1000); -- 20 minutes
+      offer_expiry := now_timestamp + (30 * 60 * 1000); -- 30 minutes
       
       -- Update to offered status
       UPDATE waiting_list 

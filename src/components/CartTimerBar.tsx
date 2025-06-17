@@ -28,7 +28,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     
     const expirationTime = getExpiryTime();
     
-    if (expirationTime && getTotalItems() > 0) {
+    if (expirationTime && getTotalItems() > 0 && waitingListEntry?.status === 'offered') {
       const updateTimer = () => {
         const now = Date.now();
         const difference = expirationTime - now;
@@ -101,12 +101,12 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   const getStatusInfo = () => {
     if (!waitingListEntry) return null;
 
-    if (waitingListEntry.status === 'offered') {
+    if (waitingListEntry.status === 'offered' && timeLeft > 0) {
       return (
         <div className="flex items-center space-x-2">
           <Clock className="w-5 h-5" />
           <span className="font-medium">
-            Time remaining: {formatTime(timeLeft)}
+            Reservation expires in: {formatTime(timeLeft)}
           </span>
         </div>
       );
@@ -117,7 +117,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
         <div className="flex items-center space-x-2">
           <Users className="w-5 h-5" />
           <span className="font-medium">
-            In waiting list - you'll be notified when tickets are available
+            In waiting list for {waitingListEntry.ticket_type || 'General'} tickets
           </span>
         </div>
       );
@@ -128,19 +128,17 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 bg-orange-600 text-white p-4 shadow-lg z-50">
+      <div className={`fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50 ${
+        waitingListEntry?.status === 'offered' && timeLeft > 0 
+          ? 'bg-orange-600 text-white' 
+          : 'bg-blue-600 text-white'
+      }`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {getStatusInfo()}
             
-            {!user && (
-              <div className="flex items-center space-x-2 bg-blue-600 px-3 py-1 rounded-full">
-                <span className="text-sm font-medium">Guest Session</span>
-              </div>
-            )}
-            
             {queueStats.totalInSystem > 0 && (
-              <div className="flex items-center space-x-2 bg-orange-700 px-3 py-1 rounded-full">
+              <div className="flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full">
                 <Users className="w-4 h-4" />
                 <span className="text-sm font-medium">
                   {queueStats.totalInSystem} people in system
@@ -149,7 +147,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
             )}
             
             {queueStats.totalWaiting > 0 && (
-              <div className="flex items-center space-x-2 bg-red-600 px-3 py-1 rounded-full">
+              <div className="flex items-center space-x-2 bg-red-600/80 px-3 py-1 rounded-full">
                 <Users className="w-4 h-4" />
                 <span className="text-sm font-medium">
                   {queueStats.totalWaiting} waiting in queue
@@ -163,18 +161,18 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
               variant="outline" 
               size="sm"
               onClick={handleView}
-              className="bg-white text-orange-600 hover:bg-gray-100"
+              className="bg-white text-blue-600 hover:bg-gray-100 border-white"
             >
-              View
+              View Cart ({getTotalItems()})
             </Button>
             <Button 
               variant="outline" 
               size="sm"
               onClick={handleRemove}
-              className="bg-transparent border-white text-white hover:bg-orange-700"
+              className="bg-transparent border-white text-white hover:bg-white/10"
             >
               <X className="w-4 h-4 mr-1" />
-              Remove
+              Clear
             </Button>
           </div>
         </div>

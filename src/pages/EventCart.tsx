@@ -33,15 +33,18 @@ const EventCart = () => {
     }
   }, [user, navigate]);
 
+  // Timer logic for 30-minute countdown
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
     const expiryTime = getExpiryTime();
     
-    if (expiryTime && cartItems.length > 0) {
+    if (expiryTime && cartItems.length > 0 && waitingListEntry?.status === 'offered') {
       const updateTimer = () => {
         const now = Date.now();
         const difference = expiryTime - now;
+        
+        console.log('Timer update:', { now, expiryTime, difference, secondsLeft: Math.floor(difference / 1000) });
         
         if (difference > 0) {
           setTimeLeft(Math.floor(difference / 1000));
@@ -49,11 +52,16 @@ const EventCart = () => {
         } else {
           setTimeLeft(0);
           setOfferExpired(true);
+          // Auto-clear expired cart
+          clearCart();
         }
       };
       
       updateTimer();
       timer = setInterval(updateTimer, 1000);
+    } else {
+      setTimeLeft(0);
+      setOfferExpired(false);
     }
 
     return () => {
@@ -61,12 +69,17 @@ const EventCart = () => {
         clearInterval(timer);
       }
     };
-  }, [cartItems.length, getExpiryTime]);
+  }, [cartItems.length, waitingListEntry?.status, waitingListEntry?.offer_expires_at, getExpiryTime, clearCart]);
 
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    }
+    return `${minutes}m ${remainingSeconds.toString().padStart(2, '0')}s`;
   };
 
   const handleProceed = () => {
@@ -74,7 +87,7 @@ const EventCart = () => {
       return;
     }
     
-    if (user) {
+    if (user && waitingListEntry?.status === 'offered') {
       navigate(`/event/${id}/complete-purchase`);
     }
   };
@@ -94,6 +107,9 @@ const EventCart = () => {
           <p className="text-blue-600">
             You'll be notified when tickets become available. Keep this page open to be ready when your turn comes!
           </p>
+          <div className="mt-2 text-sm text-blue-700">
+            <strong>Ticket Type:</strong> {waitingListEntry.ticket_type || 'General'}
+          </div>
         </div>
       );
     }
@@ -101,10 +117,14 @@ const EventCart = () => {
     if (waitingListEntry.status === 'offered' && timeLeft > 0 && !offerExpired) {
       return (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-green-800 mb-2">Tickets offered!</h3>
+          <h3 className="font-semibold text-green-800 mb-2">Tickets Reserved!</h3>
           <p className="text-green-600">
-            You have {formatTime(timeLeft)} to complete your purchase before the offer expires.
+            You have <strong>{formatTime(timeLeft)}</strong> to complete your purchase before the offer expires.
           </p>
+          <div className="mt-2 text-sm text-green-700">
+            <strong>Ticket Type:</strong> {waitingListEntry.ticket_type || 'General'} | 
+            <strong> Quantity:</strong> {waitingListEntry.quantity || 1}
+          </div>
         </div>
       );
     }
@@ -114,7 +134,7 @@ const EventCart = () => {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <h3 className="font-semibold text-red-800 mb-2">Offer Expired</h3>
           <p className="text-red-600 mb-3">
-            Your ticket offer has expired. You can join the waiting list again to get a new offer.
+            Your ticket reservation has expired. You can try again to join the waiting list.
           </p>
           <Button 
             onClick={handleClearExpiredCart}
@@ -168,9 +188,9 @@ const EventCart = () => {
               Back to Event
             </Button>
             {waitingListEntry?.status === 'offered' && timeLeft > 0 && !offerExpired && (
-              <div className="flex items-center space-x-2 text-orange-600">
+              <div className="flex items-center space-x-2 text-orange-600 bg-orange-50 px-4 py-2 rounded-lg">
                 <Clock className="w-5 h-5" />
-                <span className="font-semibold">Time remaining: {formatTime(timeLeft)}</span>
+                <span className="font-semibold text-lg">Time remaining: {formatTime(timeLeft)}</span>
               </div>
             )}
           </div>
@@ -207,7 +227,7 @@ const EventCart = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={offerExpired}
+                          disabled={offerExpired || waitingListEntry?.status !== 'offered'}
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
@@ -216,7 +236,7 @@ const EventCart = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          disabled={offerExpired}
+                          disabled={offerExpired || waitingListEntry?.status !== 'offered'}
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -226,7 +246,7 @@ const EventCart = () => {
                         size="sm"
                         onClick={() => removeFromCart(item.id)}
                         className="text-red-600 hover:text-red-700"
-                        disabled={offerExpired}
+                        disabled={offerExpired || waitingListEntry?.status !== 'offered'}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -260,9 +280,14 @@ const EventCart = () => {
                         placeholder="Promo code"
                         value={promoCode}
                         onChange={(e) => setPromoCode(e.target.value)}
-                        disabled={offerExpired}
+                        disabled={offerExpired || waitingListEntry?.status !== 'offered'}
                       />
-                      <Button variant="outline" size="sm" className="w-full" disabled={offerExpired}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full" 
+                        disabled={offerExpired || waitingListEntry?.status !== 'offered'}
+                      >
                         Apply Code
                       </Button>
                     </div>
@@ -288,6 +313,12 @@ const EventCart = () => {
                         : 'Waiting for ticket offer...'
                     }
                   </Button>
+                  
+                  {waitingListEntry?.status === 'waiting' && (
+                    <div className="text-center text-sm text-gray-600 mt-2">
+                      You're in the queue. Please wait for your turn.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

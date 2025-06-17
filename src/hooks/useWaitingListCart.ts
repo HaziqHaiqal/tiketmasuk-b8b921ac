@@ -75,6 +75,17 @@ export const useWaitingListCart = (eventId: string) => {
 
       console.log('Waiting list entry found:', data);
       setWaitingListEntry(data);
+
+      // If entry expired, clear cart
+      if (data && data.status === 'offered' && data.offer_expires_at) {
+        const now = Date.now();
+        const expiryTime = data.offer_expires_at;
+        
+        if (expiryTime < now) {
+          console.log('Offer expired, clearing cart');
+          await clearCart();
+        }
+      }
     } catch (error) {
       console.error('Error in checkWaitingListStatus:', error);
     }
@@ -92,26 +103,6 @@ export const useWaitingListCart = (eventId: string) => {
     setLoading(true);
     try {
       console.log('Adding to cart for user:', user.id, 'product:', product);
-
-      // Check if user already has items in cart for this event
-      const existingCartKey = `cart-${user.id}-${eventId}`;
-      const existingCart = localStorage.getItem(existingCartKey);
-      
-      // Create the new item
-      const newItem = { ...product, quantity };
-      
-      if (existingCart || waitingListEntry) {
-        // If cart exists or user is already in waiting list, just add the item locally
-        const existingItems = existingCart ? JSON.parse(existingCart) : cartItems;
-        const updatedItems = [...existingItems, newItem];
-        
-        setCartItems(updatedItems);
-        localStorage.setItem(existingCartKey, JSON.stringify(updatedItems));
-        
-        console.log('Added item to existing cart:', newItem);
-        toast.success('Item added to cart');
-        return;
-      }
 
       // Join waiting list with ticket type information
       const { data, error } = await supabase.rpc('join_waiting_list', {
@@ -137,7 +128,8 @@ export const useWaitingListCart = (eventId: string) => {
         
         if (response.success) {
           // Add item to cart
-          const updatedItems = [newItem];
+          const newItem = { ...product, quantity };
+          const updatedItems = [...cartItems, newItem];
           
           console.log('Adding item to cart:', newItem);
           setCartItems(updatedItems);
@@ -147,7 +139,7 @@ export const useWaitingListCart = (eventId: string) => {
           console.log('Cart saved to localStorage');
 
           if (response.status === 'offered') {
-            toast.success('Ticket offered! You have 20 minutes to complete purchase.');
+            toast.success('Tickets reserved! You have 30 minutes to complete purchase.');
           } else {
             toast.success('Added to waiting list! You\'ll be notified when tickets become available.');
           }
@@ -251,12 +243,8 @@ export const useWaitingListCart = (eventId: string) => {
     }
     
     if (waitingListEntry.offer_expires_at) {
-      // If it's already in milliseconds, return as is
-      if (waitingListEntry.offer_expires_at > 1000000000000) {
-        return waitingListEntry.offer_expires_at;
-      }
-      // If it's in seconds, convert to milliseconds
-      return waitingListEntry.offer_expires_at * 1000;
+      // Database stores milliseconds, return as is
+      return waitingListEntry.offer_expires_at;
     }
     
     return null;
