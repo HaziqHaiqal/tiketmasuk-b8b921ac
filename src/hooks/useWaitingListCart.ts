@@ -195,10 +195,6 @@ export const useWaitingListCart = (eventId: string) => {
     localStorage.setItem(`cart-${user.id}-${eventId}`, JSON.stringify(updatedItems));
   };
 
-  const handleView = () => {
-    navigate(`/events/${eventId}/cart`);
-  };
-
   const clearCart = async (navigate?: (path: string) => void) => {
     if (!user) return;
     
