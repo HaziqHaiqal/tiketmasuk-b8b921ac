@@ -89,7 +89,7 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
   };
 
   const handleView = () => {
-    navigate(`/event/${eventId}/cart`);
+    navigate(`/events/${eventId}/cart`);
   };
 
   const isHomePage = location.pathname === '/';
@@ -104,24 +104,33 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
     if (waitingListEntry.status === 'offered' && timeLeft > 0) {
       return (
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Clock className="w-5 h-5" />
-            <span className="font-medium">
-              Reservation expires in: {formatTime(timeLeft)}
-            </span>
+          {/* Large Timer Display */}
+          <div className="flex items-center space-x-3 bg-white/20 px-4 py-2 rounded-lg">
+            <Clock className="w-6 h-6 text-orange-200" />
+            <div className="text-center">
+              <div className="text-xs font-medium text-orange-200">TIME REMAINING</div>
+              <div className="text-xl font-bold text-white">{formatTime(timeLeft)}</div>
+            </div>
           </div>
           
-          {/* Show detailed queue info */}
-          {queueStats.ticketTypeStats.length > 0 && (
-            <div className="hidden md:flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full">
-              <Users className="w-4 h-4" />
-              <span className="text-sm font-medium">
-                Total tickets: {getTotalItems()}, {queueStats.ticketTypeStats.map(stat => 
-                  `${stat.totalInQueue}/${stat.totalLimit} in queue for ${stat.ticketType}`
-                ).join(', ')}
+          {/* Queue Information */}
+          <div className="flex items-center space-x-2">
+            <Users className="w-5 h-5" />
+            <div className="flex flex-col">
+              <span className="font-medium text-white">
+                Total tickets: {getTotalItems()}
               </span>
+              {queueStats.ticketTypeStats.length > 0 && (
+                <div className="text-sm text-orange-200">
+                  {queueStats.ticketTypeStats.map((stat, index) => (
+                    <div key={index}>
+                      {stat.totalInQueue}/{stat.totalLimit} in queue for Tech Conference 2024 {stat.ticketType !== 'General' ? `- ${stat.ticketType}` : ''}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       );
     }
@@ -131,21 +140,21 @@ const CartTimerBar: React.FC<CartTimerBarProps> = ({ eventId }) => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Users className="w-5 h-5" />
-            <span className="font-medium">
-              In waiting list
-            </span>
-          </div>
-          
-          {/* Show detailed queue info */}
-          {queueStats.ticketTypeStats.length > 0 && (
-            <div className="hidden md:flex items-center space-x-2 bg-white/20 px-3 py-1 rounded-full">
-              <span className="text-sm font-medium">
-                Total tickets: {getTotalItems()}, {queueStats.ticketTypeStats.map(stat => 
-                  `${stat.totalInQueue}/${stat.totalLimit} in queue for ${stat.ticketType}`
-                ).join(', ')}
+            <div className="flex flex-col">
+              <span className="font-medium text-white">
+                In waiting list - Total tickets: {getTotalItems()}
               </span>
+              {queueStats.ticketTypeStats.length > 0 && (
+                <div className="text-sm text-blue-200">
+                  {queueStats.ticketTypeStats.map((stat, index) => (
+                    <div key={index}>
+                      {stat.totalInQueue}/{stat.totalLimit} in queue for Tech Conference 2024 {stat.ticketType !== 'General' ? `- ${stat.ticketType}` : ''}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       );
     }

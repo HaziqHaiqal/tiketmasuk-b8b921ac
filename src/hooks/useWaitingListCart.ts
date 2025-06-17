@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -196,6 +195,10 @@ export const useWaitingListCart = (eventId: string) => {
     localStorage.setItem(`cart-${user.id}-${eventId}`, JSON.stringify(updatedItems));
   };
 
+  const handleView = () => {
+    navigate(`/events/${eventId}/cart`);
+  };
+
   const clearCart = async (navigate?: (path: string) => void) => {
     if (!user) return;
     
@@ -221,7 +224,7 @@ export const useWaitingListCart = (eventId: string) => {
       toast.success('Cart cleared');
       
       if (navigate) {
-        navigate(`/event/${eventId}`);
+        navigate(`/events/${eventId}`);
       }
     } catch (error) {
       console.error('Error clearing cart:', error);

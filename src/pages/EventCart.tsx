@@ -90,7 +90,7 @@ const EventCart = () => {
     }
     
     if (user && waitingListEntry?.status === 'offered') {
-      navigate(`/event/${id}/complete-purchase`);
+      navigate(`/events/${id}/complete-purchase`);
     }
   };
 
@@ -98,12 +98,16 @@ const EventCart = () => {
     clearCart(navigate);
   };
 
+  const handleBackToEvent = () => {
+    navigate(`/events/${id}`);
+  };
+
   // Get total tickets across all items
   const getTotalTickets = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
 
-  // Show waiting list status
+  // Show waiting list status with prominent timer and queue info
   const getStatusContent = () => {
     if (!waitingListEntry) return null;
 
@@ -118,21 +122,22 @@ const EventCart = () => {
             You'll be notified when tickets become available. Keep this page open to be ready when your turn comes!
           </p>
           
-          {/* Queue Information */}
-          <div className="space-y-3">
-            <div className="text-sm text-blue-700">
-              <strong>Total tickets:</strong> {getTotalTickets()}
+          {/* Prominent Queue Information */}
+          <div className="bg-blue-100 rounded-lg p-4 space-y-3">
+            <div className="text-lg font-bold text-blue-800">
+              Total tickets: {getTotalTickets()}
             </div>
             
             {queueStats.ticketTypeStats.map((typeStats, index) => (
-              <div key={index} className="bg-blue-100 rounded-lg p-3">
-                <div className="text-sm font-medium text-blue-800">
-                  {queueStats.ticketTypeStats.length > 1 && `${typeStats.userQuantity} tickets in queue for `}
-                  {typeStats.ticketType === 'General' ? 'Tech Conference 2024' : `Tech Conference 2024 - ${typeStats.ticketType}`}
+              <div key={index} className="bg-white rounded-lg p-3 border-l-4 border-blue-500">
+                <div className="text-base font-medium text-blue-800">
+                  {typeStats.totalInQueue}/{typeStats.totalLimit} tickets in queue for Tech Conference 2024{typeStats.ticketType !== 'General' ? ` - ${typeStats.ticketType}` : ''}
                 </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  {typeStats.totalInQueue}/{typeStats.totalLimit} tickets in queue
-                </div>
+                {typeStats.userQuantity > 0 && (
+                  <div className="text-sm text-blue-600 mt-1">
+                    Your {typeStats.userQuantity} ticket{typeStats.userQuantity > 1 ? 's' : ''} in this queue
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -142,39 +147,40 @@ const EventCart = () => {
 
     if (waitingListEntry.status === 'offered' && timeLeft > 0 && !offerExpired) {
       return (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Clock className="w-6 h-6 text-green-600" />
-              <h3 className="font-semibold text-green-800 text-lg">Tickets Reserved!</h3>
-            </div>
-            <div className="bg-orange-500 text-white px-4 py-2 rounded-lg">
-              <div className="text-center">
-                <div className="text-xs font-medium">TIME REMAINING</div>
-                <div className="text-xl font-bold">{formatTime(timeLeft)}</div>
-              </div>
+        <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-center mb-6">
+            {/* HUGE TIMER DISPLAY */}
+            <div className="bg-orange-500 text-white rounded-lg p-6 text-center shadow-lg">
+              <Clock className="w-8 h-8 mx-auto mb-2" />
+              <div className="text-sm font-medium mb-1">TIME REMAINING</div>
+              <div className="text-4xl font-bold">{formatTime(timeLeft)}</div>
+              <div className="text-sm mt-2 opacity-90">Complete purchase before expiry</div>
             </div>
           </div>
           
-          <p className="text-green-600 mb-4">
-            Complete your purchase before the timer expires or your tickets will be released to others in the queue.
-          </p>
+          <div className="text-center mb-4">
+            <h3 className="font-bold text-orange-800 text-xl mb-2">🎉 Tickets Reserved!</h3>
+            <p className="text-orange-700">
+              Complete your purchase before the timer expires or your tickets will be released to others in the queue.
+            </p>
+          </div>
           
-          {/* Queue Information */}
-          <div className="space-y-3">
-            <div className="text-sm text-green-700">
-              <strong>Total tickets:</strong> {getTotalTickets()}
+          {/* Prominent Queue Information */}
+          <div className="bg-orange-100 rounded-lg p-4 space-y-3">
+            <div className="text-lg font-bold text-orange-800">
+              Total tickets: {getTotalTickets()}
             </div>
             
             {queueStats.ticketTypeStats.map((typeStats, index) => (
-              <div key={index} className="bg-green-100 rounded-lg p-3">
-                <div className="text-sm font-medium text-green-800">
-                  {queueStats.ticketTypeStats.length > 1 && `${typeStats.userQuantity} tickets reserved for `}
-                  {typeStats.ticketType === 'General' ? 'Tech Conference 2024' : `Tech Conference 2024 - ${typeStats.ticketType}`}
+              <div key={index} className="bg-white rounded-lg p-3 border-l-4 border-orange-500">
+                <div className="text-base font-medium text-orange-800">
+                  {typeStats.totalInQueue}/{typeStats.totalLimit} tickets in queue for Tech Conference 2024{typeStats.ticketType !== 'General' ? ` - ${typeStats.ticketType}` : ''}
                 </div>
-                <div className="text-xs text-green-600 mt-1">
-                  {typeStats.totalInQueue}/{typeStats.totalLimit} tickets in system
-                </div>
+                {typeStats.userQuantity > 0 && (
+                  <div className="text-sm text-orange-600 mt-1">
+                    Your {typeStats.userQuantity} ticket{typeStats.userQuantity > 1 ? 's' : ''} reserved
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -212,7 +218,7 @@ const EventCart = () => {
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow-sm border-b">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Button variant="ghost" onClick={() => navigate(`/event/${id}`)}>
+            <Button variant="ghost" onClick={handleBackToEvent}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Event
             </Button>
@@ -222,7 +228,7 @@ const EventCart = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Your Cart is Empty</h1>
           <p className="text-gray-600 mb-8">Add some tickets to get started!</p>
-          <Button onClick={() => navigate(`/event/${id}`)}>
+          <Button onClick={handleBackToEvent}>
             Browse Tickets
           </Button>
         </div>
@@ -231,11 +237,11 @@ const EventCart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Button variant="ghost" onClick={() => navigate(`/event/${id}`)}>
+          <Button variant="ghost" onClick={handleBackToEvent}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Event
           </Button>
