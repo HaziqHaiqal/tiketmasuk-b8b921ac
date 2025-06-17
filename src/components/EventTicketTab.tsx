@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useWaitingListCart } from '@/hooks/useWaitingListCart';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 interface TicketType {
@@ -31,6 +32,7 @@ interface EventTicketTabProps {
 const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
   const navigate = useNavigate();
   const { id: eventId } = useParams();
+  const { user } = useAuth();
   const { addToCart, loading } = useWaitingListCart(eventId!);
   const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
 
@@ -59,6 +61,12 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
   };
 
   const handleAddToCart = async () => {
+    if (!user) {
+      toast.error('Please log in to purchase tickets');
+      navigate('/login');
+      return;
+    }
+
     const totalTickets = getTotalTickets();
     if (totalTickets === 0) {
       toast.error('Please select at least one ticket');
@@ -112,6 +120,20 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
         <CardHeader>
           <CardTitle>Select Your Tickets</CardTitle>
           <p className="text-gray-600">Choose your preferred ticket type and quantity</p>
+          {!user && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-blue-800 font-medium">
+                Please log in to purchase tickets
+              </p>
+              <Button 
+                onClick={() => navigate('/login')}
+                className="mt-2"
+                size="sm"
+              >
+                Log In
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -131,7 +153,7 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
                     <p className="text-gray-600 mb-2">{ticket.description}</p>
                     <div className="flex items-center justify-between">
                       <p className="text-xl font-bold text-blue-600">RM{ticket.price}</p>
-                      {!ticket.soldOut && (
+                      {!ticket.soldOut && user && (
                         <div className="flex items-center space-x-2">
                           <Button
                             variant="outline"
@@ -168,7 +190,7 @@ const EventTicketTab: React.FC<EventTicketTabProps> = ({ event }) => {
               </div>
             ))}
 
-            {getTotalTickets() > 0 && (
+            {getTotalTickets() > 0 && user && (
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <div>

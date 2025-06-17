@@ -408,37 +408,40 @@ export type Database = {
         Row: {
           created_at: string | null
           event_id: string
-          guest_id: string | null
           id: string
           offer_expires_at: number | null
+          quantity: number | null
           queue_position: number | null
           status: string
+          ticket_type: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           user_type: string
         }
         Insert: {
           created_at?: string | null
           event_id: string
-          guest_id?: string | null
           id?: string
           offer_expires_at?: number | null
+          quantity?: number | null
           queue_position?: number | null
           status: string
+          ticket_type?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
           user_type?: string
         }
         Update: {
           created_at?: string | null
           event_id?: string
-          guest_id?: string | null
           id?: string
           offer_expires_at?: number | null
+          quantity?: number | null
           queue_position?: number | null
           status?: string
+          ticket_type?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           user_type?: string
         }
         Relationships: [
@@ -462,6 +465,10 @@ export type Database = {
       }
       check_ticket_availability: {
         Args: { event_uuid: string }
+        Returns: Json
+      }
+      check_ticket_type_availability: {
+        Args: { event_uuid: string; ticket_type_param?: string }
         Returns: Json
       }
       cleanup_expired_offers: {
@@ -524,7 +531,13 @@ export type Database = {
         Returns: boolean
       }
       join_waiting_list: {
-        Args: { event_uuid: string; user_uuid?: string }
+        Args:
+          | {
+              event_uuid: string
+              ticket_type_param?: string
+              quantity_param?: number
+            }
+          | { event_uuid: string; user_uuid?: string }
         Returns: Json
       }
       join_waiting_list_unified: {

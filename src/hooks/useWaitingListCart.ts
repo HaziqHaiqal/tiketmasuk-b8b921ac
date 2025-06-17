@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,8 +20,11 @@ interface WaitingListResponse {
   waiting_list_id?: string;
   user_id?: string;
   offer_expires_at?: number;
+  ticket_type?: string;
+  quantity?: number;
   message?: string;
   error?: string;
+  error_code?: string;
 }
 
 export const useWaitingListCart = (eventId: string) => {
@@ -29,24 +33,11 @@ export const useWaitingListCart = (eventId: string) => {
   const [waitingListEntry, setWaitingListEntry] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Generate or get guest session ID
-  const getGuestSessionId = () => {
-    let sessionId = localStorage.getItem('guest-session-id');
-    if (!sessionId) {
-      sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('guest-session-id', sessionId);
-    }
-    return sessionId;
-  };
-
-  const getCurrentUserId = () => {
-    return user ? user.id : getGuestSessionId();
-  };
-
-  // Load cart from localStorage immediately
+  // Load cart from localStorage for authenticated users only
   const loadCartFromStorage = () => {
-    const userId = getCurrentUserId();
-    const cartKey = `cart-${userId}-${eventId}`;
+    if (!user) return false;
+    
+    const cartKey = `cart-${user.id}-${eventId}`;
     const savedCart = localStorage.getItem(cartKey);
     
     if (savedCart) {
@@ -64,17 +55,16 @@ export const useWaitingListCart = (eventId: string) => {
 
   // Check current waiting list status
   const checkWaitingListStatus = async () => {
-    if (!eventId) return;
+    if (!eventId || !user) return;
 
     try {
-      const userId = getCurrentUserId();
-      console.log('Checking waiting list status for user:', userId);
+      console.log('Checking waiting list status for user:', user.id);
 
       const { data, error } = await supabase
         .from('waiting_list')
         .select('*')
         .eq('event_id', eventId)
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .in('status', ['waiting', 'offered'])
         .maybeSingle();
 
@@ -90,17 +80,21 @@ export const useWaitingListCart = (eventId: string) => {
     }
   };
 
-  // Add to cart - follows Convex pattern
+  // Add to cart - now requires authentication and uses ticket types
   const addToCart = async (product: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
     if (loading) return;
     
+    if (!user) {
+      toast.error('Please log in to purchase tickets');
+      return;
+    }
+    
     setLoading(true);
     try {
-      const userId = getCurrentUserId();
-      console.log('Adding to cart for user:', userId, 'product:', product);
+      console.log('Adding to cart for user:', user.id, 'product:', product);
 
       // Check if user already has items in cart for this event
-      const existingCartKey = `cart-${userId}-${eventId}`;
+      const existingCartKey = `cart-${user.id}-${eventId}`;
       const existingCart = localStorage.getItem(existingCartKey);
       
       // Create the new item
@@ -119,15 +113,20 @@ export const useWaitingListCart = (eventId: string) => {
         return;
       }
 
-      // If no cart exists and not in waiting list, join waiting list first
+      // Join waiting list with ticket type information
       const { data, error } = await supabase.rpc('join_waiting_list', {
         event_uuid: eventId,
-        user_uuid: userId
+        ticket_type_param: product.ticketType,
+        quantity_param: quantity
       });
 
       if (error) {
         console.error('Error joining waiting list:', error);
-        toast.error('Failed to join waiting list: ' + error.message);
+        if (error.message.includes('Authentication required')) {
+          toast.error('Please log in to purchase tickets');
+        } else {
+          toast.error('Failed to join waiting list: ' + error.message);
+        }
         return;
       }
 
@@ -144,7 +143,7 @@ export const useWaitingListCart = (eventId: string) => {
           setCartItems(updatedItems);
 
           // Save cart to localStorage
-          localStorage.setItem(`cart-${userId}-${eventId}`, JSON.stringify(updatedItems));
+          localStorage.setItem(`cart-${user.id}-${eventId}`, JSON.stringify(updatedItems));
           console.log('Cart saved to localStorage');
 
           if (response.status === 'offered') {
@@ -156,7 +155,11 @@ export const useWaitingListCart = (eventId: string) => {
           // Update waiting list entry
           await checkWaitingListStatus();
         } else {
-          toast.error(response.error || 'Failed to join waiting list');
+          if (response.error_code === 'AUTH_REQUIRED') {
+            toast.error('Please log in to purchase tickets');
+          } else {
+            toast.error(response.error || 'Failed to join waiting list');
+          }
         }
       } else {
         console.error('Unexpected response format:', data);
@@ -171,20 +174,23 @@ export const useWaitingListCart = (eventId: string) => {
   };
 
   const removeFromCart = (productId: string) => {
+    if (!user) return;
+    
     const updatedItems = cartItems.filter(item => item.id !== productId);
     setCartItems(updatedItems);
     
-    const userId = getCurrentUserId();
     if (updatedItems.length === 0) {
-      localStorage.removeItem(`cart-${userId}-${eventId}`);
+      localStorage.removeItem(`cart-${user.id}-${eventId}`);
     } else {
-      localStorage.setItem(`cart-${userId}-${eventId}`, JSON.stringify(updatedItems));
+      localStorage.setItem(`cart-${user.id}-${eventId}`, JSON.stringify(updatedItems));
     }
     
     toast.success('Item removed from cart');
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
+    if (!user) return;
+    
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
@@ -195,18 +201,18 @@ export const useWaitingListCart = (eventId: string) => {
     );
     setCartItems(updatedItems);
 
-    const userId = getCurrentUserId();
-    localStorage.setItem(`cart-${userId}-${eventId}`, JSON.stringify(updatedItems));
+    localStorage.setItem(`cart-${user.id}-${eventId}`, JSON.stringify(updatedItems));
   };
 
   const clearCart = async (navigate?: (path: string) => void) => {
+    if (!user) return;
+    
     try {
       // Clear cart items
       setCartItems([]);
       setWaitingListEntry(null);
 
-      const userId = getCurrentUserId();
-      localStorage.removeItem(`cart-${userId}-${eventId}`);
+      localStorage.removeItem(`cart-${user.id}-${eventId}`);
 
       // If user has a waiting list entry, mark it as expired
       if (waitingListEntry) {
@@ -256,10 +262,17 @@ export const useWaitingListCart = (eventId: string) => {
     return null;
   };
 
-  // Initialize on mount - load cart first, then check waiting list
+  // Initialize on mount - only for authenticated users
   useEffect(() => {
     const initializeCart = async () => {
-      // First, try to load cart from localStorage immediately
+      if (!user) {
+        // Clear any existing cart data if user is not authenticated
+        setCartItems([]);
+        setWaitingListEntry(null);
+        return;
+      }
+      
+      // Load cart from localStorage for authenticated users
       const cartLoaded = loadCartFromStorage();
       console.log('Cart loaded from storage:', cartLoaded);
       
@@ -272,14 +285,13 @@ export const useWaitingListCart = (eventId: string) => {
     }
   }, [eventId, user?.id]);
 
-  // Set up real-time subscription for waiting list updates
+  // Set up real-time subscription for waiting list updates (authenticated users only)
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId || !user) return;
 
-    const userId = getCurrentUserId();
-    console.log('Setting up real-time subscription for user:', userId);
+    console.log('Setting up real-time subscription for user:', user.id);
 
-    const channelName = `waiting_list_updates_${eventId}_${userId.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+    const channelName = `waiting_list_updates_${eventId}_${user.id.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
     
     const subscription = supabase
       .channel(channelName)

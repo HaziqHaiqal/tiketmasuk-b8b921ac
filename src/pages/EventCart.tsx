@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Clock, Minus, Plus, Trash2 } from 'lucide-react';
 import { useWaitingListCart } from '@/hooks/useWaitingListCart';
 import { useAuth } from '@/hooks/useAuth';
-import AuthModal from '@/components/AuthModal';
 
 const EventCart = () => {
   const { id } = useParams();
@@ -24,8 +23,15 @@ const EventCart = () => {
   } = useWaitingListCart(id!);
   const [timeLeft, setTimeLeft] = useState(0);
   const [promoCode, setPromoCode] = useState('');
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [offerExpired, setOfferExpired] = useState(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -43,7 +49,6 @@ const EventCart = () => {
         } else {
           setTimeLeft(0);
           setOfferExpired(true);
-          // Don't automatically clear cart, just mark as expired
         }
       };
       
@@ -66,25 +71,12 @@ const EventCart = () => {
 
   const handleProceed = () => {
     if (offerExpired) {
-      // If offer expired, show message and don't proceed
       return;
     }
     
     if (user) {
       navigate(`/event/${id}/complete-purchase`);
-    } else {
-      setShowAuthModal(true);
     }
-  };
-
-  const handleGuestContinue = () => {
-    setShowAuthModal(false);
-    navigate(`/event/${id}/complete-purchase`);
-  };
-
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    navigate(`/event/${id}/complete-purchase`);
   };
 
   const handleClearExpiredCart = () => {
@@ -137,6 +129,10 @@ const EventCart = () => {
 
     return null;
   };
+
+  if (!user) {
+    return null; // Will redirect to login
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -203,6 +199,7 @@ const EventCart = () => {
                       />
                       <div className="flex-1">
                         <h3 className="font-medium">{item.title}</h3>
+                        <p className="text-sm text-gray-500">Type: {item.ticketType}</p>
                         <p className="text-lg font-bold text-blue-600">RM{item.price}</p>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -287,32 +284,16 @@ const EventCart = () => {
                     {offerExpired 
                       ? 'Offer Expired'
                       : waitingListEntry?.status === 'offered' 
-                        ? (user ? 'Proceed to Checkout' : 'Continue as Guest or Login')
+                        ? 'Proceed to Checkout'
                         : 'Waiting for ticket offer...'
                     }
                   </Button>
-
-                  {!user && waitingListEntry?.status === 'offered' && !offerExpired && (
-                    <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">
-                        Have an account? Sign in for faster checkout
-                      </p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onGuestContinue={handleGuestContinue}
-        onAuthSuccess={handleAuthSuccess}
-      />
     </div>
   );
 };
